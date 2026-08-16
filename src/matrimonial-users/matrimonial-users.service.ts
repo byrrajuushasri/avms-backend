@@ -17,121 +17,217 @@ export class MatrimonialUsersService {
   // ==========================================
 
   async register(
-    data: any,
-    photo?: Express.Multer.File,
-  ) {
-    const existingUser = await this.userRepository.findOne({
-      where: [
-        { email: data.email },
-        { mobile: data.mobile },
-      ],
-    });
+  data: any,
+  photo?: Express.Multer.File,
+) {
+  console.log("========== MATRIMONIAL REGISTER ==========");
+  console.log("Received data:", data);
+  console.log("Profile Category:", data.profile_category);
+  console.log("==========================================");
 
-    if (existingUser) {
-      return {
-        success: false,
-        message: 'Email or Mobile already registered',
-      };
-    }
+  const existingUser = await this.userRepository.findOne({
+    where: [
+      { email: data.email },
+      { mobile: data.mobile },
+    ],
+  });
 
-    const user = new MatrimonialUser();
+  if (existingUser) {
+    return {
+      success: false,
+      message: 'Email or Mobile already registered',
+    };
+  }
 
-    user.profile_category = data.profileCategory || null;
-    user.surname = data.surname || null;
-    user.name = data.name;
-    user.father_name = data.fatherName || null;
-    user.mother_name = data.motherName || null;
+  const user = new MatrimonialUser();
 
-    user.gotram = data.gotram || null;
-    user.nakshatram = data.nakshatram || null;
+  // ==========================================
+  // PERSONAL INFORMATION
+  // ==========================================
 
-    user.padham =
-      data.padham === '' || data.padham == null
-        ? null
-        : Number(data.padham);
+  user.profile_category =
+    data.profile_category || null;
 
-    user.rasi = data.rasi || null;
+  user.surname =
+    data.surname || null;
 
-    user.date_of_birth = data.dateOfBirth
-      ? new Date(data.dateOfBirth)
+  user.name =
+    data.name || null;
+
+  user.father_name =
+    data.father_name || null;
+
+  user.mother_name =
+    data.mother_name || null;
+
+  user.gotram =
+    data.gotram || null;
+
+  user.nakshatram =
+    data.nakshatram || null;
+
+  // ==========================================
+  // PADHAM
+  // ==========================================
+
+  user.padham =
+    data.padham === '' ||
+    data.padham === undefined ||
+    data.padham === null
+      ? null
+      : Number(data.padham);
+
+  // ==========================================
+  // RASI
+  // ==========================================
+
+  user.rasi =
+    data.rasi || null;
+
+  // ==========================================
+  // DATE OF BIRTH
+  // ==========================================
+
+  user.date_of_birth =
+    data.date_of_birth
+      ? new Date(data.date_of_birth)
       : null;
 
-    user.color = data.color || null;
-    user.height = data.height || null;
+  // ==========================================
+  // PERSONAL DETAILS
+  // ==========================================
 
-    user.email = data.email || null;
-    user.mobile = data.mobile || null;
+  user.color =
+    data.color || null;
 
-    user.password = await bcrypt.hash(
+  user.height =
+    data.height || null;
+
+  // ==========================================
+  // ACCOUNT
+  // ==========================================
+
+  user.email =
+    data.email || null;
+
+  user.mobile =
+    data.mobile || null;
+
+  user.password =
+    await bcrypt.hash(
       data.password || '',
       10,
     );
 
-    user.education = data.education || null;
-    user.occupation = data.occupation || null;
-    user.annual_income = data.salary || null;
+  // ==========================================
+  // EDUCATION & CAREER
+  // ==========================================
 
-    user.address = data.address || null;
+  user.education =
+    data.education || null;
 
-    user.family_details =
-      data.familyDetails || null;
+  user.occupation =
+    data.occupation || null;
 
-    user.brother_details =
-      data.brotherDetails || null;
+  user.annual_income =
+    data.annual_income || null;
 
-    user.sister_details =
-      data.sisterDetails || null;
+  // ==========================================
+  // ADDRESS
+  // ==========================================
 
-    user.property_details =
-      data.propertyDetails || null;
+  user.address =
+    data.address || null;
 
-    user.preferred_requirements =
-      data.preferredRequirements || null;
+  // ==========================================
+  // FAMILY
+  // ==========================================
 
-    // PHOTO
-    if (photo) {
-  user.photo = photo.filename;
-}
+  user.family_details =
+    data.family_details || null;
 
-    // STATUS
-    user.status =
-      data.status || 'Pending';
+  user.brother_details =
+    data.brother_details || null;
 
-    // MEMBERSHIP
-    user.membership =
-      data.membership || 'Free';
+  user.sister_details =
+    data.sister_details || null;
 
-    // TEMP MEMBER ID
-    user.member_id =
-      `TEMP_${Date.now()}`;
+  user.property_details =
+    data.property_details || null;
 
-    // SAVE
-    const savedUser =
-      await this.userRepository.save(user);
+  // ==========================================
+  // PREFERRED REQUIREMENTS
+  // ==========================================
 
-    // FINAL MEMBER ID
-    savedUser.member_id =
-      `AVM${String(savedUser.id).padStart(6, '0')}`;
+  user.preferred_requirements =
+    data.preferred_requirements || null;
 
-    await this.userRepository.save(savedUser);
+  // ==========================================
+  // PHOTO
+  // ==========================================
 
-    return {
-      success: true,
-      message:
-        'Matrimonial member added successfully',
-
-      data: {
-        id: savedUser.id,
-        member_id: savedUser.member_id,
-        name: savedUser.name,
-        email: savedUser.email,
-        mobile: savedUser.mobile,
-        photo: savedUser.photo,
-        status: savedUser.status,
-        membership: savedUser.membership,
-      },
-    };
+  if (photo) {
+    user.photo = photo.filename;
   }
+
+  // ==========================================
+  // STATUS
+  // ==========================================
+
+  user.status =
+    data.status || 'Pending';
+
+  // ==========================================
+  // MEMBERSHIP
+  // ==========================================
+
+  user.membership =
+    data.membership || 'Free';
+
+  // ==========================================
+  // TEMP MEMBER ID
+  // ==========================================
+
+  user.member_id =
+    `TEMP_${Date.now()}`;
+
+  // ==========================================
+  // SAVE
+  // ==========================================
+
+  const savedUser =
+    await this.userRepository.save(user);
+
+  // ==========================================
+  // FINAL MEMBER ID
+  // ==========================================
+
+  savedUser.member_id =
+    `AVM${String(savedUser.id).padStart(6, '0')}`;
+
+  await this.userRepository.save(savedUser);
+
+  // ==========================================
+  // RESPONSE
+  // ==========================================
+
+  return {
+    success: true,
+    message:
+      'Matrimonial member added successfully',
+
+    data: {
+      id: savedUser.id,
+      member_id: savedUser.member_id,
+      name: savedUser.name,
+      email: savedUser.email,
+      mobile: savedUser.mobile,
+      photo: savedUser.photo,
+      status: savedUser.status,
+      membership: savedUser.membership,
+    },
+  };
+}
 
   // ==========================================
   // GET ALL USERS
