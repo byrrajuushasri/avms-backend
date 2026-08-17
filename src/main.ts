@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { join } from 'path';
-import express from 'express';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,17 +11,10 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const uploadPath = join(
-    process.cwd(),
-    'uploads',
-    'matrimonial',
-  );
-
-  console.log('UPLOAD PATH:', uploadPath);
-
+  // Static uploaded files
   app.use(
-    '/uploads/matrimonial',
-    express.static(uploadPath),
+    '/uploads',
+    express.static(join(process.cwd(), 'uploads')),
   );
 
   await app.listen(5000);
