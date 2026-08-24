@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('matrimonial_users')
+@Entity('matrimonial')
 export class MatrimonialUser {
   @PrimaryGeneratedColumn()
   id: number;
@@ -92,9 +92,16 @@ date_of_birth: Date | null;
   @Column({ type: 'text', nullable: true })
   preferred_requirements: string;
 
-  @Column({ nullable: true })
-  photo: string;
+  // =====================================================
+// PHOTO
+// =====================================================
 
+@Column({
+  type: 'varchar',
+  length: 255,
+  nullable: true,
+})
+photo: string | null = null;
   @Column({
     type: 'enum',
     enum: ['Pending', 'Approved', 'Rejected'],

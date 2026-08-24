@@ -5,11 +5,29 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 
-import { MembershipRegisterService } from './membership-register.service';
-import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
+import {
+  FileInterceptor,
+} from '@nestjs/platform-express';
+
+import {
+  diskStorage,
+} from 'multer';
+
+import {
+  extname,
+} from 'path';
+
+import {
+  CreateMembershipRegisterDto,
+} from './dto/create-membership-register.dto';
+
+import {
+  MembershipRegisterService,
+} from './membership-register.service';
 
 @Controller('membership-register')
 export class MembershipRegisterController {
@@ -17,51 +35,83 @@ export class MembershipRegisterController {
     private readonly membershipRegisterService: MembershipRegisterService,
   ) {}
 
-  // =========================
-  // CREATE MEMBER
-  // =========================
   @Post()
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: diskStorage({
+        destination: './uploads/members',
+
+        filename: (
+          req,
+          file,
+          callback,
+        ) => {
+          const uniqueName =
+            `${Date.now()}-${Math.round(
+              Math.random() * 1e9,
+            )}${extname(file.originalname)}`;
+
+          callback(null, uniqueName);
+        },
+      }),
+
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+
+      fileFilter: (
+        req,
+        file,
+        callback,
+      ) => {
+        const allowedTypes = [
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/webp',
+        ];
+
+        if (
+          allowedTypes.includes(file.mimetype)
+        ) {
+          callback(null, true);
+        } else {
+          callback(
+            new Error(
+              'Only JPG, JPEG, PNG and WEBP images are allowed',
+            ),
+            false,
+          );
+        }
+      },
+    }),
+  )
   async create(
-    @Body()
-    createMembershipRegisterDto: CreateMembershipRegisterDto,
+    @Body() dto: CreateMembershipRegisterDto,
+
+    @UploadedFile()
+    photo?: Express.Multer.File,
   ) {
-    return await this.membershipRegisterService.create(
-      createMembershipRegisterDto,
+    const photoPath = photo
+      ? `/uploads/members/${photo.filename}`
+      : undefined;
+
+    return this.membershipRegisterService.create(
+      dto,
+      photoPath,
     );
   }
 
-  // =========================
-  // GET ALL MEMBERS
-  // =========================
   @Get()
   async findAll() {
-    return await this.membershipRegisterService.findAll();
+    return this.membershipRegisterService.findAll();
   }
 
-  // =========================
-  // GET MEMBER BY ID
-  // =========================
   @Get(':id')
   async findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe)
+    id: number,
   ) {
-    return await this.membershipRegisterService.findOne(
-      id,
-    );
-  }
-
-  // =========================
-  // UPDATE MEMBER
-  // =========================
-  @Put(':id')
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body()
-    updateMembershipRegisterDto: CreateMembershipRegisterDto,
-  ) {
-    return await this.membershipRegisterService.update(
-      id,
-      updateMembershipRegisterDto,
-    );
+    return this.membershipRegisterService.findOne(id);
   }
 }

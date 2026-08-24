@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -23,7 +24,7 @@ export class MatrimonialUsersController {
   ) {}
 
   // ==========================================
-  // REGISTER
+  // REGISTER MATRIMONIAL PROFILE
   // ==========================================
 
   @Post('register')
@@ -67,8 +68,22 @@ export class MatrimonialUsersController {
     );
   }
 
+// ==========================================
+// CHECK MEMBERSHIP BEFORE MATRIMONY
+// ==========================================
+
+@Post('check-member')
+async checkMember(
+  @Body()
+  data: {
+    mobile?: string;
+    email?: string;
+  },
+) {
+  return this.matrimonialUsersService.checkMember(data);
+}
   // ==========================================
-  // GET ALL
+  // GET ALL MATRIMONIAL USERS
   // ==========================================
 
   @Get()
@@ -77,7 +92,7 @@ export class MatrimonialUsersController {
   }
 
   // ==========================================
-  // GET ONE
+  // GET ONE MATRIMONIAL USER
   // ==========================================
 
   @Get(':id')
@@ -88,7 +103,7 @@ export class MatrimonialUsersController {
   }
 
   // ==========================================
-  // UPDATE
+  // UPDATE MATRIMONIAL USER
   // ==========================================
 
   @Put(':id')

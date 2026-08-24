@@ -1,33 +1,91 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
-  MaxLength,
 } from 'class-validator';
 
 export class CreateMembershipRegisterDto {
-  @IsNotEmpty()
   @IsString()
-  @MaxLength(150)
+  @IsNotEmpty()
   full_name: string;
 
-  @IsNotEmpty()
   @IsString()
-  @MaxLength(20)
+  @IsNotEmpty()
   mobile: string;
 
-  @IsNotEmpty()
   @IsEmail()
-  @MaxLength(150)
   email: string;
 
-  @IsNotEmpty()
   @IsString()
-  @MaxLength(255)
-  password: string;
+  @IsNotEmpty()
+  occupation: string;
 
-  @IsNotEmpty()
   @IsString()
-  @MaxLength(20)
+  @IsNotEmpty()
   gender: string;
+
+  @IsString()
+  @IsNotEmpty()
+  date_of_birth: string;
+
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @IsOptional()
+  @IsString()
+  mandal?: string;
+
+  @IsOptional()
+  @IsString()
+  sangham?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  mahashaba_payment_status: string;
+
+  @IsOptional()
+  @IsString()
+  mahashaba_payment_method?: string;
+
+  @IsOptional()
+  @IsString()
+  mahashaba_receipt_number?: string;
+
+  @IsOptional()
+  @IsString()
+  mahashaba_amount_paid?: string;
+
+  @IsOptional()
+  @IsString()
+  mahashaba_payment_date?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  sangam_payment_status: string;
+
+  @IsOptional()
+  @IsString()
+  sangam_payment_method?: string;
+
+  @IsOptional()
+  @IsString()
+  sangam_receipt_number?: string;
+
+  @IsOptional()
+  @IsString()
+  sangam_amount_paid?: string;
+
+  @IsOptional()
+  @IsString()
+  sangam_payment_date?: string;
+
+  @IsOptional()
+  @IsString()
+  executive_body?: string;
+
+  @IsOptional()
+  @IsString()
+  designation?: string;
 }

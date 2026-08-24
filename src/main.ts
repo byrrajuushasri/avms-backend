@@ -1,25 +1,31 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { join } from 'path';
-import * as express from 'express';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app =
+    await NestFactory.create<NestExpressApplication>(
+      AppModule,
+    );
 
   app.enableCors({
     origin: 'http://localhost:3000',
     credentials: true,
   });
 
-  // Static uploaded files
-  app.use(
-    '/uploads',
-    express.static(join(process.cwd(), 'uploads')),
+  app.useStaticAssets(
+    join(__dirname, '..', 'uploads'),
+    {
+      prefix: '/uploads/',
+    },
   );
 
   await app.listen(5000);
 
-  console.log('Backend running: http://localhost:5000');
+  console.log(
+    'Backend running: http://localhost:5000',
+  );
 }
 
 bootstrap();
