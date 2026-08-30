@@ -1,7 +1,8 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { join } from 'path';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+
+import { join } from "path";
+import { NestExpressApplication } from "@nestjs/platform-express";
 
 async function bootstrap() {
   const app =
@@ -9,22 +10,38 @@ async function bootstrap() {
       AppModule,
     );
 
+  // ==========================================
+  // STATIC UPLOADS
+  // ==========================================
+
+  app.useStaticAssets(
+    join(process.cwd(), "uploads"),
+    {
+      prefix: "/uploads/",
+    },
+  );
+
+  // ==========================================
+  // CORS
+  // ==========================================
+
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: "http://localhost:3000",
     credentials: true,
   });
 
-  app.useStaticAssets(
-    join(__dirname, '..', 'uploads'),
-    {
-      prefix: '/uploads/',
-    },
-  );
+  // ==========================================
+  // START SERVER
+  // ==========================================
 
   await app.listen(5000);
 
   console.log(
-    'Backend running: http://localhost:5000',
+    "Backend running: http://localhost:5000",
+  );
+
+  console.log(
+    "Uploads available at: http://localhost:5000/uploads/",
   );
 }
 

@@ -1,13 +1,17 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 
+
+import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { MembershipRegister } from './entities/membership-register.entity';
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
+import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 
 @Injectable()
 export class MembershipRegisterService {
@@ -258,13 +262,168 @@ export class MembershipRegisterService {
   // GET ALL MEMBERS
   // =========================================================
 
-  async findAll() {
+
+
+async findAll(
+  sangham?: string,
+  role?: string,
+) {
+  console.log('SERVICE ROLE:', role);
+  console.log('SERVICE SANGHAM:', sangham);
+
+  // =========================================================
+  // SUPER ADMIN
+  // =========================================================
+
+  if (
+    role &&
+    role.trim().toLowerCase() === 'super_admin'
+  ) {
+    console.log(
+      'SUPER ADMIN → SHOWING ALL MEMBERS',
+    );
+
+    const members =
+      await this.membershipRepository.find({
+        order: {
+          created_at: 'DESC',
+        },
+      });
+
+    console.log(
+      'TOTAL MEMBERS:',
+      members.length,
+    );
+
+    return members;
+  }
+
+  // =========================================================
+  // SANGHAM ADMIN
+  // =========================================================
+
+  if (
+    role?.trim().toLowerCase() ===
+      'sangham_admin' ||
+    role?.trim().toLowerCase() ===
+      'sangam_admin'
+  ) {
+    if (!sangham?.trim()) {
+      return [];
+    }
+
     return this.membershipRepository.find({
+      where: {
+        sangham: sangham.trim(),
+      },
       order: {
         created_at: 'DESC',
       },
     });
   }
+
+  // =========================================================
+  // OTHER ROLES
+  // =========================================================
+
+  return [];
+}
+
+
+
+async update(
+  id: number,
+  dto: UpdateMembershipRegisterDto,
+) {
+  const member =
+    await this.membershipRepository.findOne({
+      where: { id },
+    });
+
+  if (!member) {
+    throw new NotFoundException(
+      `Member with ID ${id} not found`,
+    );
+  }
+
+  // =========================================================
+  // BASIC DETAILS
+  // =========================================================
+
+  if (dto.full_name !== undefined) {
+    member.full_name =
+      dto.full_name.trim();
+  }
+
+  if (dto.mobile !== undefined) {
+    member.mobile =
+      dto.mobile.trim();
+  }
+
+  if (dto.email !== undefined) {
+    member.email =
+      dto.email.trim().toLowerCase();
+  }
+
+  if (dto.gender !== undefined) {
+    member.gender =
+      dto.gender.trim();
+  }
+
+  // =========================================================
+  // ROLE
+  // =========================================================
+
+  if (dto.role !== undefined) {
+    member.role =
+      dto.role.trim();
+  }
+
+  // =========================================================
+  // PASSWORD
+  // Hash ONLY when a new password is entered
+  // =========================================================
+
+  if (
+    dto.password !== undefined &&
+    dto.password.trim() !== ''
+  ) {
+    const saltRounds = 10;
+
+    member.password =
+      await bcrypt.hash(
+        dto.password.trim(),
+        saltRounds,
+      );
+  }
+
+  // =========================================================
+  // SAVE
+  // =========================================================
+
+  const updated =
+    await this.membershipRepository.save(
+      member,
+    );
+
+  // =========================================================
+  // RESPONSE
+  // Never return password
+  // =========================================================
+
+  const {
+    password,
+    ...safeMember
+  } = updated;
+
+  return {
+    success: true,
+    message:
+      'Member updated successfully',
+    data: safeMember,
+  };
+}
+
 
   // =========================================================
   // GET ONE MEMBER

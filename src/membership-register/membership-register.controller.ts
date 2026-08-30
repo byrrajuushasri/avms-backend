@@ -1,3 +1,4 @@
+
 import {
   Body,
   Controller,
@@ -5,29 +6,26 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
+  Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 
-import {
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-import {
-  diskStorage,
-} from 'multer';
+import { FileInterceptor } from '@nestjs/platform-express';
 
-import {
-  extname,
-} from 'path';
+import { diskStorage } from 'multer';
 
-import {
-  CreateMembershipRegisterDto,
-} from './dto/create-membership-register.dto';
+import { extname } from 'path';
 
-import {
-  MembershipRegisterService,
-} from './membership-register.service';
+import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
+
+import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
+
+import { MembershipRegisterService } from './membership-register.service';
 
 @Controller('membership-register')
 export class MembershipRegisterController {
@@ -35,17 +33,18 @@ export class MembershipRegisterController {
     private readonly membershipRegisterService: MembershipRegisterService,
   ) {}
 
+  // =========================================================
+  // CREATE MEMBERSHIP
+  // POST /membership-register
+  // =========================================================
+
   @Post()
   @UseInterceptors(
     FileInterceptor('photo', {
       storage: diskStorage({
         destination: './uploads/members',
 
-        filename: (
-          req,
-          file,
-          callback,
-        ) => {
+        filename: (req, file, callback) => {
           const uniqueName =
             `${Date.now()}-${Math.round(
               Math.random() * 1e9,
@@ -59,11 +58,7 @@ export class MembershipRegisterController {
         fileSize: 5 * 1024 * 1024,
       },
 
-      fileFilter: (
-        req,
-        file,
-        callback,
-      ) => {
+      fileFilter: (req, file, callback) => {
         const allowedTypes = [
           'image/jpeg',
           'image/jpg',
@@ -71,9 +66,7 @@ export class MembershipRegisterController {
           'image/webp',
         ];
 
-        if (
-          allowedTypes.includes(file.mimetype)
-        ) {
+        if (allowedTypes.includes(file.mimetype)) {
           callback(null, true);
         } else {
           callback(
@@ -102,10 +95,53 @@ export class MembershipRegisterController {
     );
   }
 
+  // =========================================================
+  // GET ALL MEMBERS
+  // GET /membership-register
+  // =========================================================
+
   @Get()
-  async findAll() {
-    return this.membershipRegisterService.findAll();
+  @UseGuards(JwtAuthGuard)
+  async findAll(@Req() req: any) {
+    const role = req.user?.role;
+    const sangham = req.user?.sangham;
+
+    console.log('GET MEMBERS');
+    console.log('ROLE:', role);
+    console.log('SANGHAM:', sangham);
+
+    return this.membershipRegisterService.findAll(
+      sangham,
+      role,
+    );
   }
+
+  // =========================================================
+  // UPDATE MEMBER
+  // PUT /membership-register/:id
+  // =========================================================
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  async update(
+    @Param('id', ParseIntPipe)
+    id: number,
+
+    @Body()
+    dto: UpdateMembershipRegisterDto,
+  ) {
+    console.log('UPDATE MEMBER ID:', id);
+
+    return this.membershipRegisterService.update(
+      id,
+      dto,
+    );
+  }
+
+  // =========================================================
+  // GET ONE MEMBER
+  // GET /membership-register/:id
+  // =========================================================
 
   @Get(':id')
   async findOne(
@@ -115,3 +151,4 @@ export class MembershipRegisterController {
     return this.membershipRegisterService.findOne(id);
   }
 }
+

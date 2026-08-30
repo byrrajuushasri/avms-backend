@@ -35,6 +35,20 @@ export class MembershipRegister {
   })
   email: string;
 
+@Column({
+  type: "varchar",
+  length: 255,
+  nullable: true,
+})
+password: string | null;
+
+@Column({
+  type: "varchar",
+  length: 30,
+  default: "user",
+})
+role: string;
+
   @Column({
     type: 'varchar',
     length: 100,
