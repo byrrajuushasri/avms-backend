@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -35,19 +36,26 @@ export class MembershipRegister {
   })
   email: string;
 
-@Column({
-  type: "varchar",
-  length: 255,
-  nullable: true,
-})
-password: string | null;
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  password: string | null;
 
-@Column({
-  type: "varchar",
-  length: 30,
-  default: "user",
-})
-role: string;
+  @Column({
+    type: 'varchar',
+    length: 30,
+    default: 'user',
+  })
+  role: string;
+
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  photo: string | null;
 
   @Column({
     type: 'varchar',
@@ -89,10 +97,22 @@ role: string;
 
   @Column({
     type: 'varchar',
-    length: 500,
-    nullable: true,
+    length: 100,
   })
-  photo: string | null;
+  executive_body: string;
+
+  @Column({
+    type: 'varchar',
+    length: 100,
+  })
+  designation: string;
+
+  @Column({
+    type: 'varchar',
+    length: 30,
+    default: 'Active',
+  })
+  status: string;
 
   @Column({
     type: 'varchar',
@@ -162,20 +182,13 @@ role: string;
   })
   sangam_payment_date: string | null;
 
-  @Column({
-    type: 'varchar',
-    length: 100,
-  })
-  executive_body: string;
-
-  @Column({
-    type: 'varchar',
-    length: 100,
-  })
-  designation: string;
-
   @CreateDateColumn({
     type: 'timestamp',
   })
   created_at: Date;
+
+  @UpdateDateColumn({
+    type: 'timestamp',
+  })
+  updated_at: Date;
 }
