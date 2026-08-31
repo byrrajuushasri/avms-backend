@@ -16,15 +16,11 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 import { FileInterceptor } from '@nestjs/platform-express';
-
 import { diskStorage } from 'multer';
-
 import { extname } from 'path';
 
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
-
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
-
 import { MembershipRegisterService } from './membership-register.service';
 
 @Controller('membership-register')
@@ -81,9 +77,7 @@ export class MembershipRegisterController {
   )
   async create(
     @Body() dto: CreateMembershipRegisterDto,
-
-    @UploadedFile()
-    photo?: Express.Multer.File,
+    @UploadedFile() photo?: Express.Multer.File,
   ) {
     const photoPath = photo
       ? `/uploads/members/${photo.filename}`
@@ -96,7 +90,27 @@ export class MembershipRegisterController {
   }
 
   // =========================================================
-  // GET ALL MEMBERS
+  // PUBLIC EXECUTIVE MEMBERS
+  // GET /membership-register/public/executives
+  // =========================================================
+  //
+  // IMPORTANT:
+  // This route MUST come BEFORE @Get(':id')
+  //
+  // NO JWT REQUIRED
+  // =========================================================
+
+  @Get('public/executives')
+  async findPublicExecutives() {
+    console.log(
+      'GET PUBLIC EXECUTIVE MEMBERS',
+    );
+
+    return this.membershipRegisterService.findPublicExecutives();
+  }
+
+  // =========================================================
+  // GET ALL MEMBERS - ADMIN
   // GET /membership-register
   // =========================================================
 
@@ -124,13 +138,13 @@ export class MembershipRegisterController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   async update(
-    @Param('id', ParseIntPipe)
-    id: number,
-
-    @Body()
-    dto: UpdateMembershipRegisterDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMembershipRegisterDto,
   ) {
-    console.log('UPDATE MEMBER ID:', id);
+    console.log(
+      'UPDATE MEMBER ID:',
+      id,
+    );
 
     return this.membershipRegisterService.update(
       id,
@@ -145,10 +159,8 @@ export class MembershipRegisterController {
 
   @Get(':id')
   async findOne(
-    @Param('id', ParseIntPipe)
-    id: number,
+    @Param('id', ParseIntPipe) id: number,
   ) {
     return this.membershipRegisterService.findOne(id);
   }
 }
-
