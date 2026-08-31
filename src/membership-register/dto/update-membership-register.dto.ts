@@ -128,4 +128,4 @@ export class UpdateMembershipRegisterDto {
   @IsOptional()
   @IsString()
   sangam_payment_date?: string;
-}
+} 
