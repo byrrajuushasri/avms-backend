@@ -436,131 +436,287 @@ async findPublicExecutives() {
   }
 
   // =========================================================
-  // UPDATE MEMBER
-  // PUT /membership-register/:id
-  // =========================================================
+// UPDATE MEMBER
+// PUT /membership-register/:id
+// =========================================================
 
-  async update(
-    id: number,
-    dto: UpdateMembershipRegisterDto,
+// =========================================================
+// UPDATE MEMBER
+// PUT /membership-register/:id
+// =========================================================
+
+async update(
+  id: number,
+  dto: UpdateMembershipRegisterDto,
+  photoPath?: string,
+) {
+  const member =
+    await this.membershipRepository.findOne({
+      where: { id },
+    });
+
+  if (!member) {
+    throw new NotFoundException(
+      `Member with ID ${id} not found`,
+    );
+  }
+
+  // =======================================================
+  // BASIC DETAILS
+  // =======================================================
+
+  if (dto.full_name !== undefined) {
+    member.full_name =
+      dto.full_name.trim();
+  }
+
+  if (dto.mobile !== undefined) {
+    member.mobile =
+      dto.mobile.trim();
+  }
+
+  if (dto.email !== undefined) {
+    member.email =
+      dto.email.trim().toLowerCase();
+  }
+
+  if (dto.occupation !== undefined) {
+    member.occupation =
+      dto.occupation.trim();
+  }
+
+  if (dto.gender !== undefined) {
+    member.gender =
+      dto.gender.trim();
+  }
+
+  if (dto.date_of_birth !== undefined) {
+    const dob =
+      String(dto.date_of_birth).trim();
+
+    if (dob !== '') {
+      member.date_of_birth = dob;
+    }
+  }
+
+  // =======================================================
+  // ROLE
+  // =======================================================
+
+  if (dto.role !== undefined) {
+    member.role =
+      dto.role.trim();
+  }
+
+  // =======================================================
+  // STATUS
+  // =======================================================
+
+  if (dto.status !== undefined) {
+    member.status =
+      dto.status.trim();
+  }
+
+  // =======================================================
+  // PASSWORD
+  // =======================================================
+
+  if (
+    dto.password !== undefined &&
+    dto.password.trim() !== ''
   ) {
-    const member =
-      await this.membershipRepository.findOne({
-        where: {
-          id,
-        },
-      });
-
-    if (!member) {
-      throw new NotFoundException(
-        `Member with ID ${id} not found`,
+    member.password =
+      await bcrypt.hash(
+        dto.password.trim(),
+        10,
       );
-    }
+  }
 
-    // =======================================================
-    // BASIC DETAILS
-    // =======================================================
+  // =======================================================
+  // EXECUTIVE DETAILS
+  // =======================================================
 
-    if (dto.full_name !== undefined) {
-      member.full_name =
-        dto.full_name.trim();
-    }
+  if (dto.executive_body !== undefined) {
+    const executiveBody =
+      dto.executive_body.trim();
 
-    if (dto.mobile !== undefined) {
-      member.mobile =
-        dto.mobile.trim();
-    }
-
-    if (dto.email !== undefined) {
-      member.email =
-        dto.email.trim().toLowerCase();
-    }
-
-    if (dto.gender !== undefined) {
-      member.gender =
-        dto.gender.trim();
-    }
-
-    // =======================================================
-    // ROLE
-    // =======================================================
-
-    if (dto.role !== undefined) {
-      member.role =
-        dto.role.trim();
-    }
-
-    // =======================================================
-    // PASSWORD
-    // Hash ONLY when new password is entered
-    // =======================================================
-
-    if (
-      dto.password !== undefined &&
-      dto.password.trim() !== ''
-    ) {
-      member.password =
-        await bcrypt.hash(
-          dto.password.trim(),
-          10,
-        );
-    }
-
-    // =======================================================
-    // EXECUTIVE DETAILS
-    // =======================================================
-
-    if (dto.executive_body !== undefined) {
+    if (executiveBody !== '') {
       member.executive_body =
-        dto.executive_body.trim();
+        executiveBody;
     }
+  }
 
-    if (dto.designation !== undefined) {
+  if (dto.designation !== undefined) {
+    const designation =
+      dto.designation.trim();
+
+    if (designation !== '') {
       member.designation =
-        dto.designation.trim();
+        designation;
     }
+  }
 
-    // =======================================================
-    // LOCATION
-    // =======================================================
+  // =======================================================
+  // LOCATION
+  // =======================================================
 
-    if (dto.district !== undefined) {
-      member.district =
-        dto.district.trim() || null;
-    }
+  if (dto.district !== undefined) {
+    member.district =
+      dto.district.trim() || null;
+  }
 
-    if (dto.mandal !== undefined) {
-      member.mandal =
-        dto.mandal.trim() || null;
-    }
+  if (dto.mandal !== undefined) {
+    member.mandal =
+      dto.mandal.trim() || null;
+  }
 
-    if (dto.sangham !== undefined) {
-      member.sangham =
-        dto.sangham.trim() || null;
-    }
+  if (dto.sangham !== undefined) {
+    member.sangham =
+      dto.sangham.trim() || null;
+  }
 
-    // =======================================================
-    // OCCUPATION
-    // =======================================================
+  // =======================================================
+  // PHOTO
+  // =======================================================
 
-    if (dto.occupation !== undefined) {
-      member.occupation =
-        dto.occupation.trim();
-    }
+  if (photoPath) {
+    member.photo =
+      photoPath;
+  }
 
-    // =======================================================
-    // SAVE
-    // =======================================================
+  // =======================================================
+  // MAHASHABA PAYMENT
+  // =======================================================
 
+  if (
+    dto.mahashaba_payment_status !==
+    undefined
+  ) {
+    member.mahashaba_payment_status =
+      dto.mahashaba_payment_status.trim();
+  }
+
+  if (
+    dto.mahashaba_payment_method !==
+    undefined
+  ) {
+    member.mahashaba_payment_method =
+      dto.mahashaba_payment_method.trim() ||
+      null;
+  }
+
+  if (
+    dto.mahashaba_receipt_number !==
+    undefined
+  ) {
+    member.mahashaba_receipt_number =
+      dto.mahashaba_receipt_number.trim() ||
+      null;
+  }
+
+  if (
+    dto.mahashaba_amount_paid !==
+    undefined
+  ) {
+    const amount =
+      String(
+        dto.mahashaba_amount_paid,
+      ).trim();
+
+    member.mahashaba_amount_paid =
+      amount !== ''
+        ? Number(amount)
+        : null;
+  }
+
+  if (
+    dto.mahashaba_payment_date !==
+    undefined
+  ) {
+    const paymentDate =
+      String(
+        dto.mahashaba_payment_date,
+      ).trim();
+
+    member.mahashaba_payment_date =
+      paymentDate !== ''
+        ? paymentDate
+        : null;
+  }
+
+  // =======================================================
+  // SANGAM PAYMENT
+  // =======================================================
+
+  if (
+    dto.sangam_payment_status !==
+    undefined
+  ) {
+    member.sangam_payment_status =
+      dto.sangam_payment_status.trim();
+  }
+
+  if (
+    dto.sangam_payment_method !==
+    undefined
+  ) {
+    member.sangam_payment_method =
+      dto.sangam_payment_method.trim() ||
+      null;
+  }
+
+  if (
+    dto.sangam_receipt_number !==
+    undefined
+  ) {
+    member.sangam_receipt_number =
+      dto.sangam_receipt_number.trim() ||
+      null;
+  }
+
+  if (
+    dto.sangam_amount_paid !==
+    undefined
+  ) {
+    const amount =
+      String(
+        dto.sangam_amount_paid,
+      ).trim();
+
+    member.sangam_amount_paid =
+      amount !== ''
+        ? Number(amount)
+        : null;
+  }
+
+  if (
+    dto.sangam_payment_date !==
+    undefined
+  ) {
+    const paymentDate =
+      String(
+        dto.sangam_payment_date,
+      ).trim();
+
+    member.sangam_payment_date =
+      paymentDate !== ''
+        ? paymentDate
+        : null;
+  }
+
+  // =======================================================
+  // SAVE
+  // =======================================================
+
+  try {
     const updated =
       await this.membershipRepository.save(
         member,
       );
 
-    // =======================================================
-    // RESPONSE
+    // =====================================================
     // NEVER RETURN PASSWORD
-    // =======================================================
+    // =====================================================
 
     const {
       password,
@@ -569,15 +725,72 @@ async findPublicExecutives() {
 
     return {
       success: true,
-
       message:
         'Member updated successfully',
-
-      data:
-        safeMember,
+      data: safeMember,
     };
+  } catch (error: any) {
+    console.error(
+      'MEMBERSHIP UPDATE ERROR:',
+      error,
+    );
+
+    if (
+      error?.code === 'ER_DUP_ENTRY'
+    ) {
+      const message =
+        String(
+          error?.sqlMessage ||
+          error?.message ||
+          '',
+        ).toLowerCase();
+
+      if (
+        message.includes('email')
+      ) {
+        throw new ConflictException(
+          'This email address is already registered.',
+        );
+      }
+
+      if (
+        message.includes('mobile')
+      ) {
+        throw new ConflictException(
+          'This mobile number is already registered.',
+        );
+      }
+
+      throw new ConflictException(
+        'Duplicate member information.',
+      );
+    }
+
+    throw error;
+  }
+}
+
+
+
+async remove(id: number) {
+  const member =
+    await this.membershipRepository.findOne({
+      where: { id },
+    });
+
+  if (!member) {
+    throw new NotFoundException(
+      `Member with ID ${id} not found`,
+    );
   }
 
+  await this.membershipRepository.remove(member);
+
+  return {
+    message: 'Member deleted successfully',
+    id,
+  };
+}
   // =========================================================
   // GET ONE MEMBER
   // GET /membership-register/:id

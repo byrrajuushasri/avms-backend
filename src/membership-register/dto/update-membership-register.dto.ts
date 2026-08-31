@@ -5,6 +5,10 @@ import {
 } from 'class-validator';
 
 export class UpdateMembershipRegisterDto {
+  // =========================================================
+  // BASIC DETAILS
+  // =========================================================
+
   @IsOptional()
   @IsString()
   full_name?: string;
@@ -16,6 +20,10 @@ export class UpdateMembershipRegisterDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
 
   @IsOptional()
   @IsString()
@@ -51,6 +59,10 @@ export class UpdateMembershipRegisterDto {
 
   @IsOptional()
   @IsString()
+  state_body?: string;
+
+  @IsOptional()
+  @IsString()
   executive_body?: string;
 
   @IsOptional()
@@ -58,24 +70,12 @@ export class UpdateMembershipRegisterDto {
   designation?: string;
 
   // =========================================================
-  // ROLE
+  // STATUS / ROLE
   // =========================================================
 
   @IsOptional()
   @IsString()
   role?: string;
-
-  // =========================================================
-  // PASSWORD
-  // =========================================================
-
-  @IsOptional()
-  @IsString()
-  password?: string;
-
-  // =========================================================
-  // STATUS
-  // =========================================================
 
   @IsOptional()
   @IsString()
@@ -96,6 +96,11 @@ export class UpdateMembershipRegisterDto {
   @IsOptional()
   @IsString()
   mahashaba_receipt_number?: string;
+
+  /*
+   * FormData always sends values as strings.
+   * Therefore keep this as string.
+   */
 
   @IsOptional()
   @IsString()
@@ -121,6 +126,10 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   sangam_receipt_number?: string;
 
+  /*
+   * FormData sends this as string.
+   */
+
   @IsOptional()
   @IsString()
   sangam_amount_paid?: string;
@@ -128,4 +137,4 @@ export class UpdateMembershipRegisterDto {
   @IsOptional()
   @IsString()
   sangam_payment_date?: string;
-} 
+}

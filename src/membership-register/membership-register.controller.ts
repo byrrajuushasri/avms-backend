@@ -1,36 +1,34 @@
-
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
   Post,
   Put,
-  Req,
+  Query,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
+import { MembershipRegisterService } from './membership-register.service';
+
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
-import { MembershipRegisterService } from './membership-register.service';
 
 @Controller('membership-register')
 export class MembershipRegisterController {
   constructor(
-    private readonly membershipRegisterService: MembershipRegisterService,
+    private readonly membershipService: MembershipRegisterService,
   ) {}
 
   // =========================================================
-  // CREATE MEMBERSHIP
+  // CREATE
   // POST /membership-register
   // =========================================================
 
@@ -39,12 +37,11 @@ export class MembershipRegisterController {
     FileInterceptor('photo', {
       storage: diskStorage({
         destination: './uploads/members',
-
         filename: (req, file, callback) => {
           const uniqueName =
-            `${Date.now()}-${Math.round(
-              Math.random() * 1e9,
-            )}${extname(file.originalname)}`;
+            `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(
+              file.originalname,
+            )}`;
 
           callback(null, uniqueName);
         },
@@ -55,19 +52,19 @@ export class MembershipRegisterController {
       },
 
       fileFilter: (req, file, callback) => {
-        const allowedTypes = [
+        const allowed = [
           'image/jpeg',
           'image/jpg',
           'image/png',
           'image/webp',
         ];
 
-        if (allowedTypes.includes(file.mimetype)) {
+        if (allowed.includes(file.mimetype)) {
           callback(null, true);
         } else {
           callback(
             new Error(
-              'Only JPG, JPEG, PNG and WEBP images are allowed',
+              'Only JPG, JPEG, PNG or WEBP images are allowed',
             ),
             false,
           );
@@ -77,79 +74,46 @@ export class MembershipRegisterController {
   )
   async create(
     @Body() dto: CreateMembershipRegisterDto,
-    @UploadedFile() photo?: Express.Multer.File,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    const photoPath = photo
-      ? `/uploads/members/${photo.filename}`
+    console.log('CREATE DTO:', dto);
+    console.log('CREATE FILE:', file?.filename);
+
+    const photoPath = file
+      ? `/uploads/members/${file.filename}`
       : undefined;
 
-    return this.membershipRegisterService.create(
-      dto,
-      photoPath,
-    );
+    return this.membershipService.create(dto, photoPath);
   }
 
   // =========================================================
-  // PUBLIC EXECUTIVE MEMBERS
-  // GET /membership-register/public/executives
-  // =========================================================
-  //
-  // IMPORTANT:
-  // This route MUST come BEFORE @Get(':id')
-  //
-  // NO JWT REQUIRED
-  // =========================================================
-
-  @Get('public/executives')
-  async findPublicExecutives() {
-    console.log(
-      'GET PUBLIC EXECUTIVE MEMBERS',
-    );
-
-    return this.membershipRegisterService.findPublicExecutives();
-  }
-
-  // =========================================================
-  // GET ALL MEMBERS - ADMIN
+  // GET ALL MEMBERS
   // GET /membership-register
   // =========================================================
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  async findAll(@Req() req: any) {
-    const role = req.user?.role;
-    const sangham = req.user?.sangham;
-
+  async findAll(
+    @Query('sangham') sangham?: string,
+    @Query('role') role?: string,
+  ) {
     console.log('GET MEMBERS');
     console.log('ROLE:', role);
     console.log('SANGHAM:', sangham);
 
-    return this.membershipRegisterService.findAll(
+    return this.membershipService.findAll(
       sangham,
       role,
     );
   }
 
   // =========================================================
-  // UPDATE MEMBER
-  // PUT /membership-register/:id
+  // PUBLIC EXECUTIVES
+  // GET /membership-register/public/executives
   // =========================================================
 
-  @Put(':id')
-  @UseGuards(JwtAuthGuard)
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateMembershipRegisterDto,
-  ) {
-    console.log(
-      'UPDATE MEMBER ID:',
-      id,
-    );
-
-    return this.membershipRegisterService.update(
-      id,
-      dto,
-    );
+  @Get('public/executives')
+  async findPublicExecutives() {
+    return this.membershipService.findPublicExecutives();
   }
 
   // =========================================================
@@ -161,6 +125,90 @@ export class MembershipRegisterController {
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.membershipRegisterService.findOne(id);
+    return this.membershipService.findOne(id);
+  }
+
+  // =========================================================
+  // DELETE MEMBER
+  // DELETE /membership-register/:id
+  // =========================================================
+
+  @Delete(':id')
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    console.log('DELETE MEMBER ID:', id);
+
+    return this.membershipService.remove(id);
+  }
+
+  // =========================================================
+  // UPDATE MEMBER
+  // PUT /membership-register/:id
+  // =========================================================
+
+  @Put(':id')
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: diskStorage({
+        destination: './uploads/members',
+
+        filename: (req, file, callback) => {
+          const uniqueName =
+            `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(
+              file.originalname,
+            )}`;
+
+          callback(null, uniqueName);
+        },
+      }),
+
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+
+      fileFilter: (req, file, callback) => {
+        const allowed = [
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/webp',
+        ];
+
+        if (allowed.includes(file.mimetype)) {
+          callback(null, true);
+        } else {
+          callback(
+            new Error(
+              'Only JPG, JPEG, PNG or WEBP images are allowed',
+            ),
+            false,
+          );
+        }
+      },
+    }),
+  )
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMembershipRegisterDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    console.log('UPDATE MEMBER ID:', id);
+    console.log('UPDATE DTO:', dto);
+    console.log('UPDATE FILE:', file?.filename);
+
+    if (!dto) {
+      dto = {} as UpdateMembershipRegisterDto;
+    }
+
+    const photoPath = file
+      ? `/uploads/members/${file.filename}`
+      : undefined;
+
+    return this.membershipService.update(
+      id,
+      dto,
+      photoPath,
+    );
   }
 }
