@@ -341,13 +341,11 @@ async findPublicExecutives() {
     if (!isDesignation) {
       return false;
     }
-
-    return true;
+  return true;
   });
 }
 
-
-  // =========================================================
+ // =========================================================
   // GET ALL MEMBERS - ADMIN
   // GET /membership-register
   // =========================================================
