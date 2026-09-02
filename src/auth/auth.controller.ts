@@ -132,4 +132,31 @@ async bootstrapPassword(
       body.role,
     );
   }
+
+
+  // =========================================================
+// LOGGED-IN USER CHANGE OWN PASSWORD
+//
+// PATCH /auth/change-password
+// =========================================================
+
+@Patch("change-password")
+@UseGuards(JwtAuthGuard)
+async changeMyPassword(
+  @Req() req: Request,
+
+  @Body()
+  body: {
+    currentPassword: string;
+    newPassword: string;
+  },
+) {
+  const user = req.user as any;
+
+  return this.authService.changeMyPassword(
+    user.id,
+    body.currentPassword,
+    body.newPassword,
+  );
+}
 }

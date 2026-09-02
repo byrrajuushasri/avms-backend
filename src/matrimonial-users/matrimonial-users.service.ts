@@ -1117,4 +1117,27 @@ export class MatrimonialUsersService {
       throw error;
     }
   }
+
+  // =====================================================
+  // DELETE MATRIMONIAL USER
+  // =====================================================
+
+  async remove(id: number) {
+    const member = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!member) {
+      throw new NotFoundException(
+        `Matrimonial member with ID ${id} not found`,
+      );
+    }
+
+    await this.userRepository.remove(member);
+
+    return {
+      message: 'Matrimonial profile deleted successfully',
+      id,
+    };
+  }
 }

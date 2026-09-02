@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Query,
+  Delete,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -148,4 +149,6 @@ async checkMember(
       photo,
     );
   }
+
+@Delete(':id') async remove( @Param('id', ParseIntPipe) id: number, ) { return this.matrimonialUsersService.remove(id); }
 }

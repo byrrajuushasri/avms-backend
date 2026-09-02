@@ -324,4 +324,87 @@ async bootstrapPassword(
       photo: member.photo,
     };
   }
+
+// =========================================================
+// CHANGE OWN PASSWORD
+// LOGGED-IN USER
+// =========================================================
+
+async changeMyPassword(
+  userId: number,
+  currentPassword: string,
+  newPassword: string,
+) {
+  if (!currentPassword || !newPassword) {
+    throw new BadRequestException(
+      "Current password and new password are required",
+    );
+  }
+
+  if (newPassword.length < 6) {
+    throw new BadRequestException(
+      "New password must contain at least 6 characters",
+    );
+  }
+
+  // Find logged-in member
+  const member =
+    await this.memberRepository.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+  if (!member) {
+    throw new NotFoundException(
+      "User not found",
+    );
+  }
+
+  // Check whether password exists
+  if (!member.password) {
+    throw new BadRequestException(
+      "Password has not been created for this account",
+    );
+  }
+
+  // Verify current password
+  const passwordValid =
+    await bcrypt.compare(
+      currentPassword,
+      member.password,
+    );
+
+  if (!passwordValid) {
+    throw new UnauthorizedException(
+      "Current password is incorrect",
+    );
+  }
+
+  // Prevent using same password
+  const samePassword =
+    await bcrypt.compare(
+      newPassword,
+      member.password,
+    );
+
+  if (samePassword) {
+    throw new BadRequestException(
+      "New password must be different from current password",
+    );
+  }
+
+  // Hash new password
+  const hashedPassword =
+    await bcrypt.hash(newPassword, 12);
+
+  member.password = hashedPassword;
+
+  await this.memberRepository.save(member);
+
+  return {
+    message: "Password updated successfully",
+  };
+}
+
 }
