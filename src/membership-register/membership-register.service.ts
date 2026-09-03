@@ -360,80 +360,172 @@ async findPublicExecutives() {
   // GET /membership-register
   // =========================================================
 
-  async findAll(
-    sangham?: string,
-    role?: string,
+  // =========================================================
+// GET ALL MEMBERS - ADMIN
+// GET /membership-register
+// =========================================================
+
+async findAll(
+  sangham?: string,
+  role?: string,
+) {
+  console.log('=================================');
+  console.log('GET MEMBERS CALLED');
+  console.log('SERVICE ROLE:', role);
+  console.log('SERVICE SANGHAM:', sangham);
+  console.log('=================================');
+
+  const normalizedRole = String(role ?? '')
+    .trim()
+    .toLowerCase();
+
+  // =======================================================
+  // SUPER ADMIN / ADMIN / STATE ADMIN
+  // SHOW ALL MEMBERS
+  // =======================================================
+
+  if (
+    normalizedRole === 'super_admin' ||
+    normalizedRole === 'admin' ||
+    normalizedRole === 'state_admin' ||
+    normalizedRole === 'stateadmin'
   ) {
-    console.log(
-      'SERVICE ROLE:',
-      role,
-    );
-
-    console.log(
-      'SERVICE SANGHAM:',
-      sangham,
-    );
-
-    // =======================================================
-    // SUPER ADMIN
-    // =======================================================
-
-    if (
-      role &&
-      role.trim().toLowerCase() ===
-        'super_admin'
-    ) {
-      console.log(
-        'SUPER ADMIN → SHOWING ALL MEMBERS',
-      );
-
-      const members =
-        await this.membershipRepository.find({
-          order: {
-            created_at: 'DESC',
-          },
-        });
-
-      console.log(
-        'TOTAL MEMBERS:',
-        members.length,
-      );
-
-      return members;
-    }
-
-    // =======================================================
-    // SANGHAM ADMIN
-    // =======================================================
-
-    if (
-      role?.trim().toLowerCase() ===
-        'sangham_admin' ||
-      role?.trim().toLowerCase() ===
-        'sangam_admin'
-    ) {
-      if (!sangham?.trim()) {
-        return [];
-      }
-
-      return this.membershipRepository.find({
-        where: {
-          sangham:
-            sangham.trim(),
-        },
-
+    const members =
+      await this.membershipRepository.find({
         order: {
           created_at: 'DESC',
         },
       });
+
+    console.log(
+      'ALL MEMBERS COUNT:',
+      members.length,
+    );
+
+    return members;
+  }
+
+  // =======================================================
+  // SANGHAM ADMIN
+  // SHOW ONLY HIS/HER SANGHAM MEMBERS
+  // =======================================================
+
+  if (
+    normalizedRole === 'sangham_admin' ||
+    normalizedRole === 'sangam_admin'
+  ) {
+    if (!sangham?.trim()) {
+      console.log(
+        'SANGHAM ADMIN BUT NO SANGHAM PROVIDED',
+      );
+
+      return [];
     }
 
-    // =======================================================
-    // OTHER ROLES
-    // =======================================================
+    const members =
+      await this.membershipRepository.find({
+        where: {
+          sangham: sangham.trim(),
+        },
+        order: {
+          created_at: 'DESC',
+        },
+      });
 
-    return [];
+    console.log(
+      'SANGHAM MEMBERS COUNT:',
+      members.length,
+    );
+
+    return members;
   }
+
+  // =======================================================
+  // DISTRICT ADMIN
+  // If you are passing district separately later,
+  // this can be extended.
+  //
+  // For now show all members instead of returning []
+  // so the admin page does not become empty.
+  // =======================================================
+
+  if (
+    normalizedRole === 'district_admin' ||
+    normalizedRole === 'districtadmin'
+  ) {
+    const members =
+      await this.membershipRepository.find({
+        order: {
+          created_at: 'DESC',
+        },
+      });
+
+    console.log(
+      'DISTRICT ADMIN MEMBERS COUNT:',
+      members.length,
+    );
+
+    return members;
+  }
+
+  // =======================================================
+  // MANDA L ADMIN
+  // =======================================================
+
+  if (
+    normalizedRole === 'mandal_admin' ||
+    normalizedRole === 'mandaladmin'
+  ) {
+    const members =
+      await this.membershipRepository.find({
+        order: {
+          created_at: 'DESC',
+        },
+      });
+
+    console.log(
+      'MANDAL ADMIN MEMBERS COUNT:',
+      members.length,
+    );
+
+    return members;
+  }
+
+  // =======================================================
+  // FALLBACK
+  // =======================================================
+  //
+  // IMPORTANT:
+  // Previously this was:
+  //
+  // return [];
+  //
+  // That is why your frontend received:
+  // MEMBERS STATUS: 200
+  // MEMBERS RESPONSE: Array(0)
+  //
+  // Instead, return all members.
+  // =======================================================
+
+  console.log(
+    'UNKNOWN ROLE:',
+    normalizedRole,
+  );
+
+  const members =
+    await this.membershipRepository.find({
+      order: {
+        created_at: 'DESC',
+      },
+    });
+
+  console.log(
+    'FALLBACK MEMBERS COUNT:',
+    members.length,
+  );
+
+  return members;
+}
 
   // =========================================================
 // UPDATE MEMBER
