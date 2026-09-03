@@ -12,7 +12,11 @@ async function bootstrap() {
   // ==========================================
 
   app.enableCors({
-    origin: "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "https://www.aaryavysyamahasabha.com",
+      "https://aaryavysyamahasabha.com",
+    ],
     credentials: true,
   });
 
@@ -30,38 +34,19 @@ async function bootstrap() {
     "matrimonial"
   );
 
-  console.log(
-    "================================="
-  );
-
-  console.log(
-    "Current working directory:",
-    process.cwd()
-  );
-
-  console.log(
-    "Uploads path:",
-    uploadsPath
-  );
-
-  console.log(
-    "Matrimonial path:",
-    matrimonialPath
-  );
-
+  console.log("=================================");
+  console.log("Current working directory:", process.cwd());
+  console.log("Uploads path:", uploadsPath);
+  console.log("Matrimonial path:", matrimonialPath);
   console.log(
     "Uploads folder exists:",
     existsSync(uploadsPath)
   );
-
   console.log(
     "Matrimonial folder exists:",
     existsSync(matrimonialPath)
   );
-
-  console.log(
-    "================================="
-  );
+  console.log("=================================");
 
   // ==========================================
   // SERVE UPLOADED FILES
@@ -76,35 +61,15 @@ async function bootstrap() {
   // START SERVER
   // ==========================================
 
-  await app.listen(5000);
+  const port = process.env.PORT || 5000;
 
-  console.log(
-    "Backend running:"
-  );
+  await app.listen(port, "0.0.0.0");
 
-  console.log(
-    "http://localhost:5000"
-  );
-
-  console.log(
-    "Uploads URL:"
-  );
-
-  console.log(
-    "http://localhost:5000/uploads/"
-  );
-
-  console.log(
-    "Matrimonial URL:"
-  );
-
-  console.log(
-    "http://localhost:5000/uploads/matrimonial/"
-  );
-
-  console.log(
-    "================================="
-  );
+  console.log("=================================");
+  console.log(`Backend running on port: ${port}`);
+  console.log(`Uploads: /uploads/`);
+  console.log(`Matrimonial: /uploads/matrimonial/`);
+  console.log("=================================");
 }
 
 bootstrap();
