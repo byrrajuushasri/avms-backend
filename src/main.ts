@@ -124,7 +124,7 @@ async function bootstrap() {
   // START SERVER
   // ==========================================
 
-  const port = process.env.PORT || 5000;
+  const port = process.env.PORT || 8080;
 
   await app.listen(
     port,

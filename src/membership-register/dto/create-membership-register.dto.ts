@@ -1,11 +1,8 @@
-
 import {
-  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
 
 export class CreateMembershipRegisterDto {
   // =========================================================
@@ -23,24 +20,6 @@ export class CreateMembershipRegisterDto {
   @IsOptional()
   @IsString()
   location?: string;
-
-  // =========================================================
-  // CONSENT
-  // =========================================================
-
-  @Transform(({ value }) => {
-    if (value === true || value === 'true' || value === '1') {
-      return true;
-    }
-
-    if (value === false || value === 'false' || value === '0') {
-      return false;
-    }
-
-    return value;
-  })
-  @IsBoolean()
-  consent: boolean;
 
   // =========================================================
   // CONTACT
@@ -73,6 +52,14 @@ export class CreateMembershipRegisterDto {
   @IsNotEmpty()
   @IsString()
   date_of_birth: string;
+
+  // =========================================================
+  // GOTRAM
+  // =========================================================
+
+  @IsNotEmpty()
+  @IsString()
+  gotram: string;
 
   // =========================================================
   // LOCATION
@@ -156,4 +143,3 @@ export class CreateMembershipRegisterDto {
   @IsString()
   sangam_payment_date?: string;
 }
-

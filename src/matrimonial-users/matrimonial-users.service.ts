@@ -495,6 +495,45 @@ export class MatrimonialUsersService {
     user.preferred_requirements =
       data?.preferred_requirements || null;
 
+
+          // ===================================================
+    // PREFERENCE NAME
+    // ===================================================
+
+    user.preference_name =
+      data?.preference_name
+        ? String(data.preference_name).trim()
+        : null;
+
+    // ===================================================
+    // PREFERENCE PHONE
+    // ===================================================
+
+    user.preference_phone =
+      data?.preference_phone
+        ? String(data.preference_phone).trim()
+        : null;
+
+    // ===================================================
+    // PREFERENCE AREA / POSITION
+    // ===================================================
+
+    user.preference_area =
+      data?.preference_area
+        ? String(data.preference_area).trim()
+        : null;
+
+    // ===================================================
+    // CONSENT
+    // ===================================================
+
+    user.consent =
+      data?.consent === true ||
+      data?.consent === 'true' ||
+      data?.consent === '1' ||
+      data?.consent === 1
+        ? 1
+        : 0;
     // ===================================================
     // PASSWORD
     // ===================================================
@@ -1015,6 +1054,55 @@ export class MatrimonialUsersService {
         data.preferred_requirements;
     }
 
+
+        // ===================================================
+    // PREFERENCE NAME
+    // ===================================================
+
+    if (
+      data?.preference_name !== undefined
+    ) {
+      matrimonial.preference_name =
+        data.preference_name;
+    }
+
+    // ===================================================
+    // PREFERENCE PHONE
+    // ===================================================
+
+    if (
+      data?.preference_phone !== undefined
+    ) {
+      matrimonial.preference_phone =
+        data.preference_phone;
+    }
+
+    // ===================================================
+    // PREFERENCE AREA / POSITION
+    // ===================================================
+
+    if (
+      data?.preference_area !== undefined
+    ) {
+      matrimonial.preference_area =
+        data.preference_area;
+    }
+
+    // ===================================================
+    // CONSENT
+    // ===================================================
+
+    if (
+      data?.consent !== undefined
+    ) {
+      matrimonial.consent =
+        data.consent === true ||
+        data.consent === 'true' ||
+        data.consent === '1' ||
+        data.consent === 1
+          ? 1
+          : 0;
+    }
     // ===================================================
     // PASSWORD
     // ===================================================

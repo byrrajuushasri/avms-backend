@@ -4,138 +4,161 @@ import {
   UpdateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
-} from 'typeorm';
+} from "typeorm";
 
-@Entity('members')
+@Entity("members")
 export class MembershipRegister {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 30,
     unique: true,
   })
   member_id: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 150,
   })
   full_name: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 20,
   })
   mobile: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 150,
   })
   email: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 255,
     nullable: true,
   })
   password: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 30,
-    default: 'user',
+    default: "user",
   })
   role: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 500,
     nullable: true,
   })
   photo: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 100,
   })
   occupation: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 20,
   })
   gender: string;
 
   @Column({
-    type: 'date',
+    type: "date",
   })
   date_of_birth: string;
 
+  /* =====================================================
+     GOTRAM
+  ===================================================== */
+
   @Column({
-    type: 'varchar',
+    type: "varchar",
+    length: 100,
+    nullable: true,
+  })
+  gotram: string | null;
+
+  /* =====================================================
+     LOCATION
+  ===================================================== */
+
+  @Column({
+    type: "varchar",
     length: 100,
     nullable: true,
   })
   district: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 100,
     nullable: true,
   })
   mandal: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 150,
     nullable: true,
   })
   sangham: string | null;
 
+  /* =====================================================
+     COMMUNITY MEMBERSHIP
+  ===================================================== */
+
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 100,
   })
   executive_body: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 100,
   })
   designation: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 30,
-    default: 'Active',
+    default: "Active",
   })
   status: string;
 
+  /* =====================================================
+     MAHASHABA PAYMENT
+  ===================================================== */
+
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 30,
   })
   mahashaba_payment_status: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 50,
     nullable: true,
   })
   mahashaba_payment_method: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 50,
     nullable: true,
   })
   mahashaba_receipt_number: string | null;
 
   @Column({
-    type: 'decimal',
+    type: "decimal",
     precision: 10,
     scale: 2,
     nullable: true,
@@ -143,33 +166,37 @@ export class MembershipRegister {
   mahashaba_amount_paid: number | null;
 
   @Column({
-    type: 'date',
+    type: "date",
     nullable: true,
   })
   mahashaba_payment_date: string | null;
 
+  /* =====================================================
+     SANGAM PAYMENT
+  ===================================================== */
+
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 30,
   })
   sangam_payment_status: string;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 50,
     nullable: true,
   })
   sangam_payment_method: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 50,
     nullable: true,
   })
   sangam_receipt_number: string | null;
 
   @Column({
-    type: 'decimal',
+    type: "decimal",
     precision: 10,
     scale: 2,
     nullable: true,
@@ -177,40 +204,40 @@ export class MembershipRegister {
   sangam_amount_paid: number | null;
 
   @Column({
-    type: 'date',
+    type: "date",
     nullable: true,
   })
   sangam_payment_date: string | null;
 
+  /* =====================================================
+     ADDITIONAL DETAILS
+  ===================================================== */
+
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 100,
     nullable: true,
   })
   surname: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 100,
     nullable: true,
   })
   location: string | null;
 
-  @Column({
-    type: 'tinyint',
-    default: 0,
-  })
-  consent: boolean;
-
-
+  /* =====================================================
+     TIMESTAMPS
+  ===================================================== */
 
   @CreateDateColumn({
-    type: 'timestamp',
+    type: "timestamp",
   })
   created_at: Date;
 
   @UpdateDateColumn({
-    type: 'timestamp',
+    type: "timestamp",
   })
   updated_at: Date;
 }

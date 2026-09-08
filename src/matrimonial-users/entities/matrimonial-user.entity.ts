@@ -159,10 +159,35 @@ export class MatrimonialUser {
   })
   status: string | null;
 
-  @CreateDateColumn({
-    type: 'timestamp',
+  @Column({
+  type: 'varchar',
+  length: 150,
+  nullable: true,
+})
+  preference_name: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    nullable: true,
   })
-  created_at: Date;
+  preference_phone: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  preference_area: string | null;
+
+  @Column('tinyint', {
+    default: 0,
+  })
+  consent: number;
+    @CreateDateColumn({
+      type: 'timestamp',
+    })
+    created_at: Date;
 
   @UpdateDateColumn({
     type: 'timestamp',

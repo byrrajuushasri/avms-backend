@@ -10,9 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { MembershipRegister } from './entities/membership-register.entity';
-
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
-
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 
 @Injectable()
@@ -31,16 +29,6 @@ export class MembershipRegisterService {
     dto: CreateMembershipRegisterDto,
     photoPath?: string,
   ) {
-    // =======================================================
-    // CONSENT VALIDATION
-    // =======================================================
-
-    if (dto.consent !== true) {
-      throw new ConflictException(
-        'Please agree to the declaration before submitting the registration.',
-      );
-    }
-
     // =======================================================
     // DUPLICATE EMAIL CHECK
     // =======================================================
@@ -103,13 +91,6 @@ export class MembershipRegisterService {
       dto.location?.trim() || null;
 
     // =======================================================
-    // CONSENT
-    // =======================================================
-
-    member.consent =
-      dto.consent === true;
-
-    // =======================================================
     // CONTACT
     // =======================================================
 
@@ -148,6 +129,13 @@ export class MembershipRegisterService {
 
     member.date_of_birth =
       dto.date_of_birth;
+
+    // =======================================================
+    // GOTRAM
+    // =======================================================
+
+    member.gotram =
+      dto.gotram?.trim() || null;
 
     // =======================================================
     // TEMP MEMBER ID
@@ -632,22 +620,6 @@ export class MembershipRegisterService {
     }
 
     // =======================================================
-    // CONSENT
-    // =======================================================
-
-    if (
-      dto.consent !== undefined
-    ) {
-      if (dto.consent !== true) {
-        throw new ConflictException(
-          'Consent is required.',
-        );
-      }
-
-      member.consent = true;
-    }
-
-    // =======================================================
     // MOBILE
     // =======================================================
 
@@ -707,6 +679,17 @@ export class MembershipRegisterService {
         member.date_of_birth =
           dob;
       }
+    }
+
+    // =======================================================
+    // GOTRAM
+    // =======================================================
+
+    if (
+      dto.gotram !== undefined
+    ) {
+      member.gotram =
+        dto.gotram.trim() || null;
     }
 
     // =======================================================

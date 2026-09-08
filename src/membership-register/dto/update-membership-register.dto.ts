@@ -1,5 +1,4 @@
 import {
-  IsBoolean,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -20,14 +19,6 @@ export class UpdateMembershipRegisterDto {
   @IsOptional()
   @IsString()
   location?: string;
-
-  // =========================================================
-  // CONSENT
-  // =========================================================
-
-  @IsOptional()
-  @IsBoolean()
-  consent?: boolean;
 
   // =========================================================
   // CONTACT
@@ -60,6 +51,14 @@ export class UpdateMembershipRegisterDto {
   @IsOptional()
   @IsString()
   date_of_birth?: string;
+
+  // =========================================================
+  // GOTRAM
+  // =========================================================
+
+  @IsOptional()
+  @IsString()
+  gotram?: string;
 
   // =========================================================
   // LOCATION
@@ -141,6 +140,7 @@ export class UpdateMembershipRegisterDto {
   sangam_receipt_number?: string;
 
   @IsOptional()
+  @IsString()
   sangam_amount_paid?: number | string;
 
   @IsOptional()
