@@ -1,33 +1,82 @@
+
 import {
-  IsEmail,
+  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateMembershipRegisterDto {
-  @IsString()
+  // =========================================================
+  // BASIC DETAILS
+  // =========================================================
+
   @IsNotEmpty()
+  @IsString()
   full_name: string;
 
+  @IsOptional()
   @IsString()
+  surname?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  // =========================================================
+  // CONSENT
+  // =========================================================
+
+  @Transform(({ value }) => {
+    if (value === true || value === 'true' || value === '1') {
+      return true;
+    }
+
+    if (value === false || value === 'false' || value === '0') {
+      return false;
+    }
+
+    return value;
+  })
+  @IsBoolean()
+  consent: boolean;
+
+  // =========================================================
+  // CONTACT
+  // =========================================================
+
   @IsNotEmpty()
+  @IsString()
   mobile: string;
 
-  @IsEmail()
+  @IsNotEmpty()
+  @IsString()
   email: string;
 
+  @IsOptional()
   @IsString()
+  password?: string;
+
+  // =========================================================
+  // USER DETAILS
+  // =========================================================
+
   @IsNotEmpty()
+  @IsString()
   occupation: string;
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   gender: string;
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   date_of_birth: string;
+
+  // =========================================================
+  // LOCATION
+  // =========================================================
 
   @IsOptional()
   @IsString()
@@ -41,9 +90,33 @@ export class CreateMembershipRegisterDto {
   @IsString()
   sangham?: string;
 
+  // =========================================================
+  // EXECUTIVE
+  // =========================================================
+
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  mahashaba_payment_status: string;
+  executive_body?: string;
+
+  @IsOptional()
+  @IsString()
+  designation?: string;
+
+  // =========================================================
+  // STATUS
+  // =========================================================
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  // =========================================================
+  // MAHASHABA PAYMENT
+  // =========================================================
+
+  @IsOptional()
+  @IsString()
+  mahashaba_payment_status?: string;
 
   @IsOptional()
   @IsString()
@@ -54,16 +127,19 @@ export class CreateMembershipRegisterDto {
   mahashaba_receipt_number?: string;
 
   @IsOptional()
-  @IsString()
-  mahashaba_amount_paid?: string;
+  mahashaba_amount_paid?: number | string;
 
   @IsOptional()
   @IsString()
   mahashaba_payment_date?: string;
 
+  // =========================================================
+  // SANGAM PAYMENT
+  // =========================================================
+
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  sangam_payment_status: string;
+  sangam_payment_status?: string;
 
   @IsOptional()
   @IsString()
@@ -74,18 +150,10 @@ export class CreateMembershipRegisterDto {
   sangam_receipt_number?: string;
 
   @IsOptional()
-  @IsString()
-  sangam_amount_paid?: string;
+  sangam_amount_paid?: number | string;
 
   @IsOptional()
   @IsString()
   sangam_payment_date?: string;
-
-  @IsOptional()
-  @IsString()
-  executive_body?: string;
-
-  @IsOptional()
-  @IsString()
-  designation?: string;
 }
+

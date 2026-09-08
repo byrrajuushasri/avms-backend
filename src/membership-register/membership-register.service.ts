@@ -5,11 +5,14 @@ import {
 } from '@nestjs/common';
 
 import * as bcrypt from 'bcrypt';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { MembershipRegister } from './entities/membership-register.entity';
+
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
+
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 
 @Injectable()
@@ -24,876 +27,1029 @@ export class MembershipRegisterService {
   // POST /membership-register
   // =========================================================
 
- async create(
-  dto: CreateMembershipRegisterDto,
-  photoPath?: string,
-) {
-  // =======================================================
-  // DUPLICATE EMAIL CHECK
-  // =======================================================
+  async create(
+    dto: CreateMembershipRegisterDto,
+    photoPath?: string,
+  ) {
+    // =======================================================
+    // CONSENT VALIDATION
+    // =======================================================
 
-  const email = dto.email?.trim().toLowerCase();
-
-  if (email) {
-    const existingEmail =
-      await this.membershipRepository.findOne({
-        where: { email },
-      });
-
-    if (existingEmail) {
+    if (dto.consent !== true) {
       throw new ConflictException(
-        `This email address is already registered. Member ID: ${
-          existingEmail.member_id || existingEmail.id
-        }`,
+        'Please agree to the declaration before submitting the registration.',
       );
     }
-  }
 
-  // =======================================================
-  // DUPLICATE MOBILE CHECK
-  // =======================================================
+    // =======================================================
+    // DUPLICATE EMAIL CHECK
+    // =======================================================
 
-  const mobile = dto.mobile?.trim();
+    const email = dto.email?.trim().toLowerCase();
 
-  if (mobile) {
-    const existingMobile =
-      await this.membershipRepository.findOne({
-        where: { mobile },
-      });
+    if (email) {
+      const existingEmail =
+        await this.membershipRepository.findOne({
+          where: { email },
+        });
 
-    if (existingMobile) {
-      throw new ConflictException(
-        `This mobile number is already registered. Member ID: ${
-          existingMobile.member_id || existingMobile.id
-        }`,
-      );
-    }
-  }
-
-  // =======================================================
-  // CREATE MEMBER
-  // =======================================================
-
-  const member = new MembershipRegister();
-
-  member.full_name =
-    dto.full_name?.trim();
-
-  member.mobile =
-    mobile;
-
-  member.email =
-    email;
-
-  member.occupation =
-    dto.occupation?.trim();
-
-  member.gender =
-    dto.gender?.trim();
-
-  member.date_of_birth =
-    dto.date_of_birth;
-
-  // =======================================================
-  // IMPORTANT
-  // RAILWAY member_id IS NOT NULL
-  // So give temporary ID for FIRST INSERT
-  // =======================================================
-
-  member.member_id =
-    `TEMP_${Date.now()}`;
-
-  // =======================================================
-  // DEFAULT ROLE
-  // =======================================================
-
-  member.role = 'user';
-
-  // =======================================================
-  // LOCATION
-  // =======================================================
-
-  member.district =
-    dto.district?.trim() || null;
-
-  member.mandal =
-    dto.mandal?.trim() || null;
-
-  member.sangham =
-    dto.sangham?.trim() || null;
-
-  // =======================================================
-  // PHOTO
-  // =======================================================
-
-  member.photo =
-    photoPath || null;
-
-  // =======================================================
-  // STATUS
-  // =======================================================
-
-  member.status =
-    'Active';
-
-  // =======================================================
-  // MAHASHABA PAYMENT
-  // =======================================================
-
-  member.mahashaba_payment_status =
-    dto.mahashaba_payment_status;
-
-  member.mahashaba_payment_method =
-    dto.mahashaba_payment_method?.trim() || null;
-
-  member.mahashaba_receipt_number =
-    dto.mahashaba_receipt_number?.trim() || null;
-
-  member.mahashaba_amount_paid =
-    dto.mahashaba_amount_paid
-      ? Number(dto.mahashaba_amount_paid)
-      : null;
-
-  member.mahashaba_payment_date =
-    dto.mahashaba_payment_date || null;
-
-  // =======================================================
-  // SANGAM PAYMENT
-  // =======================================================
-
-  member.sangam_payment_status =
-    dto.sangam_payment_status;
-
-  member.sangam_payment_method =
-    dto.sangam_payment_method?.trim() || null;
-
-  member.sangam_receipt_number =
-    dto.sangam_receipt_number?.trim() || null;
-
-  member.sangam_amount_paid =
-    dto.sangam_amount_paid
-      ? Number(dto.sangam_amount_paid)
-      : null;
-
-  member.sangam_payment_date =
-    dto.sangam_payment_date || null;
-
-  // =======================================================
-  // EXECUTIVE DETAILS
-  // =======================================================
-
-  member.executive_body =
-    dto.executive_body?.trim() ||
-    'State Body';
-
-  member.designation =
-    dto.designation?.trim() ||
-    'Member';
-
-  // =======================================================
-  // FIRST SAVE
-  // =======================================================
-
-  let savedMember: MembershipRegister;
-
-  try {
-    savedMember =
-      await this.membershipRepository.save(member);
-  } catch (error: any) {
-    console.error(
-      'MEMBERSHIP CREATE ERROR:',
-      error,
-    );
-
-    if (error?.code === 'ER_DUP_ENTRY') {
-      const message = String(
-        error?.sqlMessage ||
-        error?.message ||
-        '',
-      ).toLowerCase();
-
-      if (message.includes('email')) {
+      if (existingEmail) {
         throw new ConflictException(
-          'This email address is already registered.',
+          `This email address is already registered. Member ID: ${
+            existingEmail.member_id || existingEmail.id
+          }`,
         );
       }
+    }
 
-      if (message.includes('mobile')) {
+    // =======================================================
+    // DUPLICATE MOBILE CHECK
+    // =======================================================
+
+    const mobile = dto.mobile?.trim();
+
+    if (mobile) {
+      const existingMobile =
+        await this.membershipRepository.findOne({
+          where: { mobile },
+        });
+
+      if (existingMobile) {
         throw new ConflictException(
-          'This mobile number is already registered.',
+          `This mobile number is already registered. Member ID: ${
+            existingMobile.member_id || existingMobile.id
+          }`,
         );
       }
-
-      throw new ConflictException(
-        'This member already exists.',
-      );
-    }
-
-    throw error;
-  }
-
-  // =======================================================
-  // GENERATE REAL MEMBER ID
-  // =======================================================
-
-  const memberId =
-    `TVM${String(savedMember.id).padStart(5, '0')}`;
-
-  // =======================================================
-  // UPDATE MEMBER ID
-  // =======================================================
-
-  savedMember.member_id =
-    memberId;
-
-  const updatedMember =
-    await this.membershipRepository.save(
-      savedMember,
-    );
-
-  // =======================================================
-  // RESPONSE
-  // =======================================================
-
-  return {
-    success: true,
-
-    message:
-      'Membership registered successfully',
-
-    member_id:
-      updatedMember.member_id,
-
-    id:
-      updatedMember.id,
-
-    photo:
-      updatedMember.photo,
-
-    data:
-      updatedMember,
-  };
-}
-  // =========================================================
-  // PUBLIC EXECUTIVE MEMBERS
-  // GET /membership-register/public/executives
-  //
-  // NO JWT REQUIRED
-  // Used by public Contact page
-  // =========================================================
-
-
-// =========================================================
-// PUBLIC EXECUTIVE MEMBERS
-// GET /membership-register/public/executives
-// =========================================================
-
-async findPublicExecutives() {
-  const members =
-    await this.membershipRepository.find({
-      order: {
-        created_at: 'DESC',
-      },
-    });
-
-  return members.filter((member) => {
-    // =======================================================
-    // EXECUTIVE BODY
-    // =======================================================
-
-    const body = String(
-      member.executive_body ?? '',
-    )
-      .trim()
-      .toLowerCase()
-      .replace(/[_-]+/g, ' ')
-      .replace(/\s+/g, ' ');
-
-    const isBody =
-      body === 'state' ||
-      body === 'state body' ||
-      body.startsWith('state ') ||
-
-      body === 'district' ||
-      body === 'district body' ||
-      body.startsWith('district ') ||
-
-      body === 'mandal' ||
-      body === 'mandal body' ||
-      body.startsWith('mandal ') ||
-
-      body === 'sangam' ||
-      body === 'sangam body' ||
-      body.startsWith('sangam ');
-
-    if (!isBody) {
-      return false;
     }
 
     // =======================================================
-    // DESIGNATION
+    // CREATE MEMBER
     // =======================================================
 
-    const designation = String(
-      member.designation ?? '',
-    )
-      .trim()
-      .toLowerCase()
-      .replace(/[_-]+/g, ' ')
-      .replace(/\s+/g, ' ');
+    const member = new MembershipRegister();
 
-    const isDesignation =
-      designation === 'president' ||
-      designation === 'vice president' ||
-      designation === 'general secretary' ||
-      designation === 'joint secretary';
+    // =======================================================
+    // BASIC DETAILS
+    // =======================================================
 
-    if (!isDesignation) {
-      return false;
-    }
-  return true;
-  });
-}
-
- // =========================================================
-  // GET ALL MEMBERS - ADMIN
-  // GET /membership-register
-  // =========================================================
-
-  // =========================================================
-// GET ALL MEMBERS - ADMIN
-// GET /membership-register
-// =========================================================
-
-async findAll(
-  sangham?: string,
-  role?: string,
-) {
-  console.log('=================================');
-  console.log('GET MEMBERS CALLED');
-  console.log('SERVICE ROLE:', role);
-  console.log('SERVICE SANGHAM:', sangham);
-  console.log('=================================');
-
-  const normalizedRole = String(role ?? '')
-    .trim()
-    .toLowerCase();
-
-  // =======================================================
-  // SUPER ADMIN / ADMIN / STATE ADMIN
-  // SHOW ALL MEMBERS
-  // =======================================================
-
-  if (
-    normalizedRole === 'super_admin' ||
-    normalizedRole === 'admin' ||
-    normalizedRole === 'state_admin' ||
-    normalizedRole === 'stateadmin'
-  ) {
-    const members =
-      await this.membershipRepository.find({
-        order: {
-          created_at: 'DESC',
-        },
-      });
-
-    console.log(
-      'ALL MEMBERS COUNT:',
-      members.length,
-    );
-
-    return members;
-  }
-
-  // =======================================================
-  // SANGHAM ADMIN
-  // SHOW ONLY HIS/HER SANGHAM MEMBERS
-  // =======================================================
-
-  if (
-    normalizedRole === 'sangham_admin' ||
-    normalizedRole === 'sangam_admin'
-  ) {
-    if (!sangham?.trim()) {
-      console.log(
-        'SANGHAM ADMIN BUT NO SANGHAM PROVIDED',
-      );
-
-      return [];
-    }
-
-    const members =
-      await this.membershipRepository.find({
-        where: {
-          sangham: sangham.trim(),
-        },
-        order: {
-          created_at: 'DESC',
-        },
-      });
-
-    console.log(
-      'SANGHAM MEMBERS COUNT:',
-      members.length,
-    );
-
-    return members;
-  }
-
-  // =======================================================
-  // DISTRICT ADMIN
-  // If you are passing district separately later,
-  // this can be extended.
-  //
-  // For now show all members instead of returning []
-  // so the admin page does not become empty.
-  // =======================================================
-
-  if (
-    normalizedRole === 'district_admin' ||
-    normalizedRole === 'districtadmin'
-  ) {
-    const members =
-      await this.membershipRepository.find({
-        order: {
-          created_at: 'DESC',
-        },
-      });
-
-    console.log(
-      'DISTRICT ADMIN MEMBERS COUNT:',
-      members.length,
-    );
-
-    return members;
-  }
-
-  // =======================================================
-  // MANDA L ADMIN
-  // =======================================================
-
-  if (
-    normalizedRole === 'mandal_admin' ||
-    normalizedRole === 'mandaladmin'
-  ) {
-    const members =
-      await this.membershipRepository.find({
-        order: {
-          created_at: 'DESC',
-        },
-      });
-
-    console.log(
-      'MANDAL ADMIN MEMBERS COUNT:',
-      members.length,
-    );
-
-    return members;
-  }
-
-  // =======================================================
-  // FALLBACK
-  // =======================================================
-  //
-  // IMPORTANT:
-  // Previously this was:
-  //
-  // return [];
-  //
-  // That is why your frontend received:
-  // MEMBERS STATUS: 200
-  // MEMBERS RESPONSE: Array(0)
-  //
-  // Instead, return all members.
-  // =======================================================
-
-  console.log(
-    'UNKNOWN ROLE:',
-    normalizedRole,
-  );
-
-  const members =
-    await this.membershipRepository.find({
-      order: {
-        created_at: 'DESC',
-      },
-    });
-
-  console.log(
-    'FALLBACK MEMBERS COUNT:',
-    members.length,
-  );
-
-  return members;
-}
-
-  // =========================================================
-// UPDATE MEMBER
-// PUT /membership-register/:id
-// =========================================================
-
-// =========================================================
-// UPDATE MEMBER
-// PUT /membership-register/:id
-// =========================================================
-
-async update(
-  id: number,
-  dto: UpdateMembershipRegisterDto,
-  photoPath?: string,
-) {
-  const member =
-    await this.membershipRepository.findOne({
-      where: { id },
-    });
-
-  if (!member) {
-    throw new NotFoundException(
-      `Member with ID ${id} not found`,
-    );
-  }
-
-  // =======================================================
-  // BASIC DETAILS
-  // =======================================================
-
-  if (dto.full_name !== undefined) {
     member.full_name =
-      dto.full_name.trim();
-  }
+      dto.full_name?.trim();
 
-  if (dto.mobile !== undefined) {
+    member.surname =
+      dto.surname?.trim() || null;
+
+    member.location =
+      dto.location?.trim() || null;
+
+    // =======================================================
+    // CONSENT
+    // =======================================================
+
+    member.consent =
+      dto.consent === true;
+
+    // =======================================================
+    // CONTACT
+    // =======================================================
+
     member.mobile =
-      dto.mobile.trim();
-  }
+      mobile;
 
-  if (dto.email !== undefined) {
     member.email =
-      dto.email.trim().toLowerCase();
-  }
+      email;
 
-  if (dto.occupation !== undefined) {
+    // =======================================================
+    // PASSWORD
+    // =======================================================
+
+    if (
+      dto.password &&
+      dto.password.trim() !== ''
+    ) {
+      member.password =
+        await bcrypt.hash(
+          dto.password.trim(),
+          10,
+        );
+    } else {
+      member.password = null;
+    }
+
+    // =======================================================
+    // USER DETAILS
+    // =======================================================
+
     member.occupation =
-      dto.occupation.trim();
-  }
+      dto.occupation?.trim();
 
-  if (dto.gender !== undefined) {
     member.gender =
-      dto.gender.trim();
-  }
+      dto.gender?.trim();
 
-  if (dto.date_of_birth !== undefined) {
-    const dob =
-      String(dto.date_of_birth).trim();
+    member.date_of_birth =
+      dto.date_of_birth;
 
-    if (dob !== '') {
-      member.date_of_birth = dob;
-    }
-  }
+    // =======================================================
+    // TEMP MEMBER ID
+    // =======================================================
 
-  // =======================================================
-  // ROLE
-  // =======================================================
+    member.member_id =
+      `TEMP_${Date.now()}`;
 
-  if (dto.role !== undefined) {
+    // =======================================================
+    // DEFAULT ROLE
+    // =======================================================
+
     member.role =
-      dto.role.trim();
-  }
+      'user';
 
-  // =======================================================
-  // STATUS
-  // =======================================================
+    // =======================================================
+    // LOCATION
+    // =======================================================
 
-  if (dto.status !== undefined) {
-    member.status =
-      dto.status.trim();
-  }
-
-  // =======================================================
-  // PASSWORD
-  // =======================================================
-
-  if (
-    dto.password !== undefined &&
-    dto.password.trim() !== ''
-  ) {
-    member.password =
-      await bcrypt.hash(
-        dto.password.trim(),
-        10,
-      );
-  }
-
-  // =======================================================
-  // EXECUTIVE DETAILS
-  // =======================================================
-
-  if (dto.executive_body !== undefined) {
-    const executiveBody =
-      dto.executive_body.trim();
-
-    if (executiveBody !== '') {
-      member.executive_body =
-        executiveBody;
-    }
-  }
-
-  if (dto.designation !== undefined) {
-    const designation =
-      dto.designation.trim();
-
-    if (designation !== '') {
-      member.designation =
-        designation;
-    }
-  }
-
-  // =======================================================
-  // LOCATION
-  // =======================================================
-
-  if (dto.district !== undefined) {
     member.district =
-      dto.district.trim() || null;
-  }
+      dto.district?.trim() || null;
 
-  if (dto.mandal !== undefined) {
     member.mandal =
-      dto.mandal.trim() || null;
-  }
+      dto.mandal?.trim() || null;
 
-  if (dto.sangham !== undefined) {
     member.sangham =
-      dto.sangham.trim() || null;
-  }
+      dto.sangham?.trim() || null;
 
-  // =======================================================
-  // PHOTO
-  // =======================================================
+    // =======================================================
+    // PHOTO
+    // =======================================================
 
-  if (photoPath) {
     member.photo =
-      photoPath;
-  }
+      photoPath || null;
 
-  // =======================================================
-  // MAHASHABA PAYMENT
-  // =======================================================
+    // =======================================================
+    // STATUS
+    // =======================================================
 
-  if (
-    dto.mahashaba_payment_status !==
-    undefined
-  ) {
+    member.status =
+      'Active';
+
+    // =======================================================
+    // MAHASHABA PAYMENT
+    // =======================================================
+
     member.mahashaba_payment_status =
-      dto.mahashaba_payment_status.trim();
-  }
+      dto.mahashaba_payment_status || 'Free';
 
-  if (
-    dto.mahashaba_payment_method !==
-    undefined
-  ) {
     member.mahashaba_payment_method =
-      dto.mahashaba_payment_method.trim() ||
-      null;
-  }
+      dto.mahashaba_payment_method?.trim() || null;
 
-  if (
-    dto.mahashaba_receipt_number !==
-    undefined
-  ) {
     member.mahashaba_receipt_number =
-      dto.mahashaba_receipt_number.trim() ||
-      null;
-  }
-
-  if (
-    dto.mahashaba_amount_paid !==
-    undefined
-  ) {
-    const amount =
-      String(
-        dto.mahashaba_amount_paid,
-      ).trim();
+      dto.mahashaba_receipt_number?.trim() || null;
 
     member.mahashaba_amount_paid =
-      amount !== ''
-        ? Number(amount)
+      dto.mahashaba_amount_paid !== undefined &&
+      dto.mahashaba_amount_paid !== ''
+        ? Number(dto.mahashaba_amount_paid)
         : null;
-  }
-
-  if (
-    dto.mahashaba_payment_date !==
-    undefined
-  ) {
-    const paymentDate =
-      String(
-        dto.mahashaba_payment_date,
-      ).trim();
 
     member.mahashaba_payment_date =
-      paymentDate !== ''
-        ? paymentDate
-        : null;
-  }
+      dto.mahashaba_payment_date || null;
 
-  // =======================================================
-  // SANGAM PAYMENT
-  // =======================================================
+    // =======================================================
+    // SANGAM PAYMENT
+    // =======================================================
 
-  if (
-    dto.sangam_payment_status !==
-    undefined
-  ) {
     member.sangam_payment_status =
-      dto.sangam_payment_status.trim();
-  }
+      dto.sangam_payment_status || 'Free';
 
-  if (
-    dto.sangam_payment_method !==
-    undefined
-  ) {
     member.sangam_payment_method =
-      dto.sangam_payment_method.trim() ||
-      null;
-  }
+      dto.sangam_payment_method?.trim() || null;
 
-  if (
-    dto.sangam_receipt_number !==
-    undefined
-  ) {
     member.sangam_receipt_number =
-      dto.sangam_receipt_number.trim() ||
-      null;
-  }
-
-  if (
-    dto.sangam_amount_paid !==
-    undefined
-  ) {
-    const amount =
-      String(
-        dto.sangam_amount_paid,
-      ).trim();
+      dto.sangam_receipt_number?.trim() || null;
 
     member.sangam_amount_paid =
-      amount !== ''
-        ? Number(amount)
+      dto.sangam_amount_paid !== undefined &&
+      dto.sangam_amount_paid !== ''
+        ? Number(dto.sangam_amount_paid)
         : null;
-  }
-
-  if (
-    dto.sangam_payment_date !==
-    undefined
-  ) {
-    const paymentDate =
-      String(
-        dto.sangam_payment_date,
-      ).trim();
 
     member.sangam_payment_date =
-      paymentDate !== ''
-        ? paymentDate
-        : null;
-  }
+      dto.sangam_payment_date || null;
 
-  // =======================================================
-  // SAVE
-  // =======================================================
+    // =======================================================
+    // EXECUTIVE DETAILS
+    // =======================================================
 
-  try {
-    const updated =
-      await this.membershipRepository.save(
-        member,
+    member.executive_body =
+      dto.executive_body?.trim() ||
+      'State Body';
+
+    member.designation =
+      dto.designation?.trim() ||
+      'Member';
+
+    // =======================================================
+    // FIRST SAVE
+    // =======================================================
+
+    let savedMember: MembershipRegister;
+
+    try {
+      savedMember =
+        await this.membershipRepository.save(
+          member,
+        );
+    } catch (error: any) {
+      console.error(
+        'MEMBERSHIP CREATE ERROR:',
+        error,
       );
 
-    // =====================================================
-    // NEVER RETURN PASSWORD
-    // =====================================================
+      if (
+        error?.code === 'ER_DUP_ENTRY'
+      ) {
+        const message =
+          String(
+            error?.sqlMessage ||
+            error?.message ||
+            '',
+          ).toLowerCase();
+
+        if (
+          message.includes('email')
+        ) {
+          throw new ConflictException(
+            'This email address is already registered.',
+          );
+        }
+
+        if (
+          message.includes('mobile')
+        ) {
+          throw new ConflictException(
+            'This mobile number is already registered.',
+          );
+        }
+
+        throw new ConflictException(
+          'This member already exists.',
+        );
+      }
+
+      throw error;
+    }
+
+    // =======================================================
+    // GENERATE REAL MEMBER ID
+    // =======================================================
+
+    const memberId =
+      `TVM${String(savedMember.id).padStart(5, '0')}`;
+
+    // =======================================================
+    // UPDATE MEMBER ID
+    // =======================================================
+
+    savedMember.member_id =
+      memberId;
+
+    const updatedMember =
+      await this.membershipRepository.save(
+        savedMember,
+      );
+
+    // =======================================================
+    // RESPONSE WITHOUT PASSWORD
+    // =======================================================
 
     const {
       password,
       ...safeMember
-    } = updated;
+    } = updatedMember;
+
+    return {
+      success: true,
+
+      message:
+        'Membership registered successfully',
+
+      member_id:
+        updatedMember.member_id,
+
+      id:
+        updatedMember.id,
+
+      photo:
+        updatedMember.photo,
+
+      data:
+        safeMember,
+    };
+  }
+
+  // =========================================================
+  // PUBLIC EXECUTIVE MEMBERS
+  // GET /membership-register/public/executives
+  // =========================================================
+
+  async findPublicExecutives() {
+    const members =
+      await this.membershipRepository.find({
+        order: {
+          created_at: 'DESC',
+        },
+      });
+
+    return members.filter((member) => {
+      // =====================================================
+      // EXECUTIVE BODY
+      // =====================================================
+
+      const body =
+        String(
+          member.executive_body ?? '',
+        )
+          .trim()
+          .toLowerCase()
+          .replace(/[_-]+/g, ' ')
+          .replace(/\s+/g, ' ');
+
+      const isBody =
+        body === 'state' ||
+        body === 'state body' ||
+        body.startsWith('state ') ||
+
+        body === 'district' ||
+        body === 'district body' ||
+        body.startsWith('district ') ||
+
+        body === 'mandal' ||
+        body === 'mandal body' ||
+        body.startsWith('mandal ') ||
+
+        body === 'sangam' ||
+        body === 'sangam body' ||
+        body.startsWith('sangam ');
+
+      if (!isBody) {
+        return false;
+      }
+
+      // =====================================================
+      // DESIGNATION
+      // =====================================================
+
+      const designation =
+        String(
+          member.designation ?? '',
+        )
+          .trim()
+          .toLowerCase()
+          .replace(/[_-]+/g, ' ')
+          .replace(/\s+/g, ' ');
+
+      const isDesignation =
+        designation === 'president' ||
+        designation === 'vice president' ||
+        designation === 'general secretary' ||
+        designation === 'joint secretary';
+
+      if (!isDesignation) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  // =========================================================
+  // GET ALL MEMBERS - ADMIN
+  // GET /membership-register
+  // =========================================================
+
+  async findAll(
+    sangham?: string,
+    role?: string,
+  ) {
+    console.log(
+      '=================================',
+    );
+
+    console.log(
+      'GET MEMBERS CALLED',
+    );
+
+    console.log(
+      'SERVICE ROLE:',
+      role,
+    );
+
+    console.log(
+      'SERVICE SANGHAM:',
+      sangham,
+    );
+
+    console.log(
+      '=================================',
+    );
+
+    const normalizedRole =
+      String(role ?? '')
+        .trim()
+        .toLowerCase();
+
+    // =======================================================
+    // SUPER ADMIN / ADMIN / STATE ADMIN
+    // =======================================================
+
+    if (
+      normalizedRole === 'super_admin' ||
+      normalizedRole === 'admin' ||
+      normalizedRole === 'state_admin' ||
+      normalizedRole === 'stateadmin'
+    ) {
+      const members =
+        await this.membershipRepository.find({
+          order: {
+            created_at: 'DESC',
+          },
+        });
+
+      console.log(
+        'ALL MEMBERS COUNT:',
+        members.length,
+      );
+
+      return members;
+    }
+
+    // =======================================================
+    // SANGHAM ADMIN
+    // =======================================================
+
+    if (
+      normalizedRole === 'sangham_admin' ||
+      normalizedRole === 'sangam_admin'
+    ) {
+      if (!sangham?.trim()) {
+        console.log(
+          'SANGHAM ADMIN BUT NO SANGHAM PROVIDED',
+        );
+
+        return [];
+      }
+
+      const members =
+        await this.membershipRepository.find({
+          where: {
+            sangham: sangham.trim(),
+          },
+          order: {
+            created_at: 'DESC',
+          },
+        });
+
+      console.log(
+        'SANGHAM MEMBERS COUNT:',
+        members.length,
+      );
+
+      return members;
+    }
+
+    // =======================================================
+    // DISTRICT ADMIN
+    // =======================================================
+
+    if (
+      normalizedRole === 'district_admin' ||
+      normalizedRole === 'districtadmin'
+    ) {
+      const members =
+        await this.membershipRepository.find({
+          order: {
+            created_at: 'DESC',
+          },
+        });
+
+      console.log(
+        'DISTRICT ADMIN MEMBERS COUNT:',
+        members.length,
+      );
+
+      return members;
+    }
+
+    // =======================================================
+    // MANDAL ADMIN
+    // =======================================================
+
+    if (
+      normalizedRole === 'mandal_admin' ||
+      normalizedRole === 'mandaladmin'
+    ) {
+      const members =
+        await this.membershipRepository.find({
+          order: {
+            created_at: 'DESC',
+          },
+        });
+
+      console.log(
+        'MANDAL ADMIN MEMBERS COUNT:',
+        members.length,
+      );
+
+      return members;
+    }
+
+    // =======================================================
+    // FALLBACK
+    // =======================================================
+
+    console.log(
+      'UNKNOWN ROLE:',
+      normalizedRole,
+    );
+
+    const members =
+      await this.membershipRepository.find({
+        order: {
+          created_at: 'DESC',
+        },
+      });
+
+    console.log(
+      'FALLBACK MEMBERS COUNT:',
+      members.length,
+    );
+
+    return members;
+  }
+
+  // =========================================================
+  // UPDATE MEMBER
+  // PUT /membership-register/:id
+  // =========================================================
+
+  async update(
+    id: number,
+    dto: UpdateMembershipRegisterDto,
+    photoPath?: string,
+  ) {
+    const member =
+      await this.membershipRepository.findOne({
+        where: { id },
+      });
+
+    if (!member) {
+      throw new NotFoundException(
+        `Member with ID ${id} not found`,
+      );
+    }
+
+    // =======================================================
+    // BASIC DETAILS
+    // =======================================================
+
+    if (
+      dto.full_name !== undefined
+    ) {
+      member.full_name =
+        dto.full_name.trim();
+    }
+
+    if (
+      dto.surname !== undefined
+    ) {
+      member.surname =
+        dto.surname.trim() || null;
+    }
+
+    if (
+      dto.location !== undefined
+    ) {
+      member.location =
+        dto.location.trim() || null;
+    }
+
+    // =======================================================
+    // CONSENT
+    // =======================================================
+
+    if (
+      dto.consent !== undefined
+    ) {
+      if (dto.consent !== true) {
+        throw new ConflictException(
+          'Consent is required.',
+        );
+      }
+
+      member.consent = true;
+    }
+
+    // =======================================================
+    // MOBILE
+    // =======================================================
+
+    if (
+      dto.mobile !== undefined
+    ) {
+      member.mobile =
+        dto.mobile.trim();
+    }
+
+    // =======================================================
+    // EMAIL
+    // =======================================================
+
+    if (
+      dto.email !== undefined
+    ) {
+      member.email =
+        dto.email.trim().toLowerCase();
+    }
+
+    // =======================================================
+    // OCCUPATION
+    // =======================================================
+
+    if (
+      dto.occupation !== undefined
+    ) {
+      member.occupation =
+        dto.occupation.trim();
+    }
+
+    // =======================================================
+    // GENDER
+    // =======================================================
+
+    if (
+      dto.gender !== undefined
+    ) {
+      member.gender =
+        dto.gender.trim();
+    }
+
+    // =======================================================
+    // DATE OF BIRTH
+    // =======================================================
+
+    if (
+      dto.date_of_birth !== undefined
+    ) {
+      const dob =
+        String(
+          dto.date_of_birth,
+        ).trim();
+
+      if (dob !== '') {
+        member.date_of_birth =
+          dob;
+      }
+    }
+
+    // =======================================================
+    // ROLE
+    // =======================================================
+
+    if (
+      dto.role !== undefined
+    ) {
+      member.role =
+        dto.role.trim();
+    }
+
+    // =======================================================
+    // STATUS
+    // =======================================================
+
+    if (
+      dto.status !== undefined
+    ) {
+      member.status =
+        dto.status.trim();
+    }
+
+    // =======================================================
+    // PASSWORD
+    // =======================================================
+
+    if (
+      dto.password !== undefined &&
+      dto.password.trim() !== ''
+    ) {
+      member.password =
+        await bcrypt.hash(
+          dto.password.trim(),
+          10,
+        );
+    }
+
+    // =======================================================
+    // EXECUTIVE DETAILS
+    // =======================================================
+
+    if (
+      dto.executive_body !== undefined
+    ) {
+      const executiveBody =
+        dto.executive_body.trim();
+
+      if (executiveBody !== '') {
+        member.executive_body =
+          executiveBody;
+      }
+    }
+
+    if (
+      dto.designation !== undefined
+    ) {
+      const designation =
+        dto.designation.trim();
+
+      if (designation !== '') {
+        member.designation =
+          designation;
+      }
+    }
+
+    // =======================================================
+    // LOCATION
+    // =======================================================
+
+    if (
+      dto.district !== undefined
+    ) {
+      member.district =
+        dto.district.trim() || null;
+    }
+
+    if (
+      dto.mandal !== undefined
+    ) {
+      member.mandal =
+        dto.mandal.trim() || null;
+    }
+
+    if (
+      dto.sangham !== undefined
+    ) {
+      member.sangham =
+        dto.sangham.trim() || null;
+    }
+
+    // =======================================================
+    // PHOTO
+    // =======================================================
+
+    if (photoPath) {
+      member.photo =
+        photoPath;
+    }
+
+    // =======================================================
+    // MAHASHABA PAYMENT
+    // =======================================================
+
+    if (
+      dto.mahashaba_payment_status !==
+      undefined
+    ) {
+      member.mahashaba_payment_status =
+        dto.mahashaba_payment_status.trim();
+    }
+
+    if (
+      dto.mahashaba_payment_method !==
+      undefined
+    ) {
+      member.mahashaba_payment_method =
+        dto.mahashaba_payment_method.trim() ||
+        null;
+    }
+
+    if (
+      dto.mahashaba_receipt_number !==
+      undefined
+    ) {
+      member.mahashaba_receipt_number =
+        dto.mahashaba_receipt_number.trim() ||
+        null;
+    }
+
+    if (
+      dto.mahashaba_amount_paid !==
+      undefined
+    ) {
+      const amount =
+        String(
+          dto.mahashaba_amount_paid,
+        ).trim();
+
+      member.mahashaba_amount_paid =
+        amount !== ''
+          ? Number(amount)
+          : null;
+    }
+
+    if (
+      dto.mahashaba_payment_date !==
+      undefined
+    ) {
+      const paymentDate =
+        String(
+          dto.mahashaba_payment_date,
+        ).trim();
+
+      member.mahashaba_payment_date =
+        paymentDate !== ''
+          ? paymentDate
+          : null;
+    }
+
+    // =======================================================
+    // SANGAM PAYMENT
+    // =======================================================
+
+    if (
+      dto.sangam_payment_status !==
+      undefined
+    ) {
+      member.sangam_payment_status =
+        dto.sangam_payment_status.trim();
+    }
+
+    if (
+      dto.sangam_payment_method !==
+      undefined
+    ) {
+      member.sangam_payment_method =
+        dto.sangam_payment_method.trim() ||
+        null;
+    }
+
+    if (
+      dto.sangam_receipt_number !==
+      undefined
+    ) {
+      member.sangam_receipt_number =
+        dto.sangam_receipt_number.trim() ||
+        null;
+    }
+
+    if (
+      dto.sangam_amount_paid !==
+      undefined
+    ) {
+      const amount =
+        String(
+          dto.sangam_amount_paid,
+        ).trim();
+
+      member.sangam_amount_paid =
+        amount !== ''
+          ? Number(amount)
+          : null;
+    }
+
+    if (
+      dto.sangam_payment_date !==
+      undefined
+    ) {
+      const paymentDate =
+        String(
+          dto.sangam_payment_date,
+        ).trim();
+
+      member.sangam_payment_date =
+        paymentDate !== ''
+          ? paymentDate
+          : null;
+    }
+
+    // =======================================================
+    // SAVE
+    // =======================================================
+
+    try {
+      const updated =
+        await this.membershipRepository.save(
+          member,
+        );
+
+      // =====================================================
+      // NEVER RETURN PASSWORD
+      // =====================================================
+
+      const {
+        password,
+        ...safeMember
+      } = updated;
+
+      return {
+        success: true,
+
+        message:
+          'Member updated successfully',
+
+        data:
+          safeMember,
+      };
+    } catch (error: any) {
+      console.error(
+        'MEMBERSHIP UPDATE ERROR:',
+        error,
+      );
+
+      if (
+        error?.code === 'ER_DUP_ENTRY'
+      ) {
+        const message =
+          String(
+            error?.sqlMessage ||
+            error?.message ||
+            '',
+          ).toLowerCase();
+
+        if (
+          message.includes('email')
+        ) {
+          throw new ConflictException(
+            'This email address is already registered.',
+          );
+        }
+
+        if (
+          message.includes('mobile')
+        ) {
+          throw new ConflictException(
+            'This mobile number is already registered.',
+          );
+        }
+
+        throw new ConflictException(
+          'Duplicate member information.',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  // =========================================================
+  // DELETE MEMBER
+  // DELETE /membership-register/:id
+  // =========================================================
+
+  async remove(id: number) {
+    const member =
+      await this.membershipRepository.findOne({
+        where: { id },
+      });
+
+    if (!member) {
+      throw new NotFoundException(
+        `Member with ID ${id} not found`,
+      );
+    }
+
+    await this.membershipRepository.remove(
+      member,
+    );
 
     return {
       success: true,
       message:
-        'Member updated successfully',
-      data: safeMember,
+        'Member deleted successfully',
+      id,
     };
-  } catch (error: any) {
-    console.error(
-      'MEMBERSHIP UPDATE ERROR:',
-      error,
-    );
-
-    if (
-      error?.code === 'ER_DUP_ENTRY'
-    ) {
-      const message =
-        String(
-          error?.sqlMessage ||
-          error?.message ||
-          '',
-        ).toLowerCase();
-
-      if (
-        message.includes('email')
-      ) {
-        throw new ConflictException(
-          'This email address is already registered.',
-        );
-      }
-
-      if (
-        message.includes('mobile')
-      ) {
-        throw new ConflictException(
-          'This mobile number is already registered.',
-        );
-      }
-
-      throw new ConflictException(
-        'Duplicate member information.',
-      );
-    }
-
-    throw error;
-  }
-}
-
-
-
-async remove(id: number) {
-  const member =
-    await this.membershipRepository.findOne({
-      where: { id },
-    });
-
-  if (!member) {
-    throw new NotFoundException(
-      `Member with ID ${id} not found`,
-    );
   }
 
-  await this.membershipRepository.remove(member);
-
-  return {
-    message: 'Member deleted successfully',
-    id,
-  };
-}
   // =========================================================
   // GET ONE MEMBER
   // GET /membership-register/:id
   // =========================================================
 
   async findOne(id: number) {
-    return this.membershipRepository.findOne({
-      where: {
-        id,
-      },
-    });
+    const member =
+      await this.membershipRepository.findOne({
+        where: {
+          id,
+        },
+      });
+
+    if (!member) {
+      throw new NotFoundException(
+        `Member with ID ${id} not found`,
+      );
+    }
+
+    const {
+      password,
+      ...safeMember
+    } = member;
+
+    return safeMember;
   }
 }
-

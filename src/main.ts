@@ -1,11 +1,24 @@
+
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { join } from "path";
 import * as express from "express";
 import { existsSync } from "fs";
+import { ValidationPipe } from "@nestjs/common";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // ==========================================
+  // GLOBAL VALIDATION PIPE
+  // ==========================================
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   // ==========================================
   // CORS
@@ -20,7 +33,7 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests without Origin
-      // (Postman, server-side requests, etc.)
+      // Postman, server-side requests, etc.
       if (!origin) {
         return callback(null, true);
       }
@@ -33,7 +46,7 @@ async function bootstrap() {
 
       return callback(
         new Error("Not allowed by CORS"),
-        false
+        false,
       );
     },
 
@@ -62,38 +75,38 @@ async function bootstrap() {
 
   const uploadsPath = join(
     process.cwd(),
-    "uploads"
+    "uploads",
   );
 
   const matrimonialPath = join(
     uploadsPath,
-    "matrimonial"
+    "matrimonial",
   );
 
   console.log("=================================");
   console.log(
     "Current working directory:",
-    process.cwd()
+    process.cwd(),
   );
 
   console.log(
     "Uploads path:",
-    uploadsPath
+    uploadsPath,
   );
 
   console.log(
     "Matrimonial path:",
-    matrimonialPath
+    matrimonialPath,
   );
 
   console.log(
     "Uploads folder exists:",
-    existsSync(uploadsPath)
+    existsSync(uploadsPath),
   );
 
   console.log(
     "Matrimonial folder exists:",
-    existsSync(matrimonialPath)
+    existsSync(matrimonialPath),
   );
 
   console.log("=================================");
@@ -104,7 +117,7 @@ async function bootstrap() {
 
   app.use(
     "/uploads",
-    express.static(uploadsPath)
+    express.static(uploadsPath),
   );
 
   // ==========================================
@@ -115,22 +128,26 @@ async function bootstrap() {
 
   await app.listen(
     port,
-    "0.0.0.0"
+    "0.0.0.0",
   );
 
   console.log("=================================");
   console.log(
-    `Backend running on port: ${port}`
+    `Backend running on port: ${port}`,
   );
+
   console.log("Backend URL:");
   console.log(
-    "https://avms-backend-production.up.railway.app"
+    "https://avms-backend-production.up.railway.app",
   );
+
   console.log("Uploads: /uploads/");
   console.log(
-    "Matrimonial: /uploads/matrimonial/"
+    "Matrimonial: /uploads/matrimonial/",
   );
+
   console.log("=================================");
 }
 
 bootstrap();
+

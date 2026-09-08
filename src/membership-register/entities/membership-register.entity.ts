@@ -182,6 +182,28 @@ export class MembershipRegister {
   })
   sangam_payment_date: string | null;
 
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  surname: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  location: string | null;
+
+  @Column({
+    type: 'tinyint',
+    default: 0,
+  })
+  consent: boolean;
+
+
+
   @CreateDateColumn({
     type: 'timestamp',
   })

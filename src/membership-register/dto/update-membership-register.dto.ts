@@ -1,5 +1,5 @@
 import {
-  IsEmail,
+  IsBoolean,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -15,15 +15,39 @@ export class UpdateMembershipRegisterDto {
 
   @IsOptional()
   @IsString()
+  surname?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  // =========================================================
+  // CONSENT
+  // =========================================================
+
+  @IsOptional()
+  @IsBoolean()
+  consent?: boolean;
+
+  // =========================================================
+  // CONTACT
+  // =========================================================
+
+  @IsOptional()
+  @IsString()
   mobile?: string;
 
   @IsOptional()
-  @IsEmail()
+  @IsString()
   email?: string;
 
   @IsOptional()
   @IsString()
   password?: string;
+
+  // =========================================================
+  // USER DETAILS
+  // =========================================================
 
   @IsOptional()
   @IsString()
@@ -54,12 +78,8 @@ export class UpdateMembershipRegisterDto {
   sangham?: string;
 
   // =========================================================
-  // EXECUTIVE DETAILS
+  // EXECUTIVE
   // =========================================================
-
-  @IsOptional()
-  @IsString()
-  state_body?: string;
 
   @IsOptional()
   @IsString()
@@ -70,7 +90,7 @@ export class UpdateMembershipRegisterDto {
   designation?: string;
 
   // =========================================================
-  // STATUS / ROLE
+  // ROLE / STATUS
   // =========================================================
 
   @IsOptional()
@@ -97,14 +117,8 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   mahashaba_receipt_number?: string;
 
-  /*
-   * FormData always sends values as strings.
-   * Therefore keep this as string.
-   */
-
   @IsOptional()
-  @IsString()
-  mahashaba_amount_paid?: string;
+  mahashaba_amount_paid?: number | string;
 
   @IsOptional()
   @IsString()
@@ -126,13 +140,8 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   sangam_receipt_number?: string;
 
-  /*
-   * FormData sends this as string.
-   */
-
   @IsOptional()
-  @IsString()
-  sangam_amount_paid?: string;
+  sangam_amount_paid?: number | string;
 
   @IsOptional()
   @IsString()
