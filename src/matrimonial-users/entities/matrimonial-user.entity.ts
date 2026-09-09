@@ -126,6 +126,29 @@ export class MatrimonialUser {
     nullable: true,
   })
   family_details: string | null;
+  
+// =========================================================
+// FATHER OCCUPATION
+// =========================================================
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  father_occupation: string | null;
+
+
+  // =========================================================
+  // MOTHER OCCUPATION
+  // =========================================================
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+mother_occupation: string | null;
 
   @Column({
     type: 'text',

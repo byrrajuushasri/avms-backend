@@ -1,13 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
   Post,
   Put,
   Query,
-  Delete,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,9 +24,9 @@ export class MatrimonialUsersController {
     private readonly matrimonialUsersService: MatrimonialUsersService,
   ) {}
 
-  // ==========================================
+  // =====================================================
   // REGISTER MATRIMONIAL PROFILE
-  // ==========================================
+  // =====================================================
 
   @Post('register')
   @UseInterceptors(
@@ -63,38 +63,42 @@ export class MatrimonialUsersController {
     @Body() data: any,
     @UploadedFile() photo?: Express.Multer.File,
   ) {
+    console.log('========== REGISTER PHOTO ==========');
+    console.log('Photo:', photo?.filename || 'No photo');
+
     return this.matrimonialUsersService.register(
       data,
       photo,
     );
   }
 
-// ==========================================
-// CHECK MEMBERSHIP BEFORE MATRIMONY
-// ==========================================
+  // =====================================================
+  // CHECK MEMBERSHIP BEFORE MATRIMONY
+  // =====================================================
 
-@Post('check-member')
-async checkMember(
-  @Body()
-  data: {
-    mobile?: string;
-    email?: string;
-  },
-) {
-  return this.matrimonialUsersService.checkMember(data);
-}
-  // ==========================================
+  @Post('check-member')
+  async checkMember(
+    @Body()
+    data: {
+      mobile?: string;
+      email?: string;
+    },
+  ) {
+    return this.matrimonialUsersService.checkMember(data);
+  }
+
+  // =====================================================
   // GET ALL MATRIMONIAL USERS
-  // ==========================================
+  // =====================================================
 
   @Get()
   async findAll() {
     return this.matrimonialUsersService.findAll();
   }
 
-  // ==========================================
+  // =====================================================
   // GET ONE MATRIMONIAL USER
-  // ==========================================
+  // =====================================================
 
   @Get(':id')
   async findOne(
@@ -103,9 +107,9 @@ async checkMember(
     return this.matrimonialUsersService.findOne(id);
   }
 
-  // ==========================================
+  // =====================================================
   // UPDATE MATRIMONIAL USER
-  // ==========================================
+  // =====================================================
 
   @Put(':id')
   @UseInterceptors(
@@ -140,9 +144,19 @@ async checkMember(
   )
   async update(
     @Param('id', ParseIntPipe) id: number,
+
     @Body() data: any,
-    @UploadedFile() photo?: Express.Multer.File,
+
+    @UploadedFile()
+    photo?: Express.Multer.File,
   ) {
+    console.log('========== UPDATE PHOTO ==========');
+    console.log('Matrimonial ID:', id);
+    console.log(
+      'Uploaded Photo:',
+      photo?.filename || 'NO PHOTO',
+    );
+
     return this.matrimonialUsersService.update(
       id,
       data,
@@ -150,5 +164,14 @@ async checkMember(
     );
   }
 
-@Delete(':id') async remove( @Param('id', ParseIntPipe) id: number, ) { return this.matrimonialUsersService.remove(id); }
+  // =====================================================
+  // DELETE MATRIMONIAL USER
+  // =====================================================
+
+  @Delete(':id')
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.matrimonialUsersService.remove(id);
+  }
 }

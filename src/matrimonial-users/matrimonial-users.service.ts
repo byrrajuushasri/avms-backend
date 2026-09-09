@@ -21,8 +21,10 @@ import {
   MembershipRegister,
 } from '../membership-register/entities/membership-register.entity';
 
+
 @Injectable()
 export class MatrimonialUsersService {
+
   constructor(
     @InjectRepository(MatrimonialUser)
     private readonly userRepository: Repository<MatrimonialUser>,
@@ -31,11 +33,13 @@ export class MatrimonialUsersService {
     private readonly memberRepository: Repository<MembershipRegister>,
   ) {}
 
-  // =====================================================
-  // CHECK MEMBER BEFORE MATRIMONIAL REGISTRATION
-  // =====================================================
+
+  // =========================================================
+  // CHECK MEMBER
+  // =========================================================
 
   async checkMember(data: any) {
+
     console.log(
       '========== CHECK MEMBER BEFORE MATRIMONIAL ==========',
     );
@@ -55,9 +59,6 @@ export class MatrimonialUsersService {
     console.log('Mobile:', mobile);
     console.log('Email:', email);
 
-    // ===================================================
-    // MOBILE / EMAIL REQUIRED
-    // ===================================================
 
     if (!mobile && !email) {
       return {
@@ -68,11 +69,9 @@ export class MatrimonialUsersService {
       };
     }
 
-    // ===================================================
-    // FIND MEMBER
-    // ===================================================
 
     const conditions: any[] = [];
+
 
     if (mobile) {
       conditions.push({
@@ -80,20 +79,19 @@ export class MatrimonialUsersService {
       });
     }
 
+
     if (email) {
       conditions.push({
         email,
       });
     }
 
+
     const member =
       await this.memberRepository.findOne({
         where: conditions,
       });
 
-    // ===================================================
-    // MEMBER NOT FOUND
-    // ===================================================
 
     if (!member) {
       return {
@@ -104,14 +102,12 @@ export class MatrimonialUsersService {
       };
     }
 
+
     console.log(
       'Member found:',
       member.member_id,
     );
 
-    // ===================================================
-    // CHECK MATRIMONIAL USING MEMBER ID
-    // ===================================================
 
     const existingMatrimonial =
       await this.userRepository.findOne({
@@ -120,11 +116,9 @@ export class MatrimonialUsersService {
         },
       });
 
-    // ===================================================
-    // ALREADY REGISTERED
-    // ===================================================
 
     if (existingMatrimonial) {
+
       return {
         success: false,
         canRegister: false,
@@ -134,6 +128,7 @@ export class MatrimonialUsersService {
           'This Member is already registered in Matrimonial.',
 
         data: {
+
           member_id:
             member.member_id,
 
@@ -164,19 +159,20 @@ export class MatrimonialUsersService {
       };
     }
 
-    // ===================================================
-    // MEMBER VERIFIED
-    // ===================================================
 
     return {
+
       success: true,
+
       canRegister: true,
+
       alreadyRegistered: false,
 
       message:
         'Member verified. You can register for Matrimonial.',
 
       data: {
+
         member_id:
           member.member_id,
 
@@ -204,14 +200,17 @@ export class MatrimonialUsersService {
     };
   }
 
-  // =====================================================
-  // REGISTER MATRIMONIAL PROFILE
-  // =====================================================
+
+
+  // =========================================================
+  // REGISTER MATRIMONIAL MEMBER
+  // =========================================================
 
   async register(
     data: any,
     photo?: Express.Multer.File,
   ) {
+
     console.log(
       '========== MATRIMONIAL REGISTER ==========',
     );
@@ -226,16 +225,19 @@ export class MatrimonialUsersService {
       photo?.filename || 'No photo',
     );
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // MEMBER ID
-    // ===================================================
+    // -------------------------------------------------------
 
     const memberId =
       data?.member_id
         ? String(data.member_id).trim()
         : '';
 
+
     if (!memberId) {
+
       return {
         success: false,
         canRegister: false,
@@ -244,9 +246,10 @@ export class MatrimonialUsersService {
       };
     }
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // FIND MEMBER
-    // ===================================================
+    // -------------------------------------------------------
 
     const member =
       await this.memberRepository.findOne({
@@ -255,7 +258,9 @@ export class MatrimonialUsersService {
         },
       });
 
+
     if (!member) {
+
       return {
         success: false,
         canRegister: false,
@@ -263,6 +268,7 @@ export class MatrimonialUsersService {
           'Membership record not found. Please verify your membership again.',
       };
     }
+
 
     console.log(
       'Verified Membership:',
@@ -284,9 +290,10 @@ export class MatrimonialUsersService {
       member.email,
     );
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // CHECK EXISTING MATRIMONIAL
-    // ===================================================
+    // -------------------------------------------------------
 
     const existingUser =
       await this.userRepository.findOne({
@@ -295,16 +302,22 @@ export class MatrimonialUsersService {
         },
       });
 
+
     if (existingUser) {
+
       return {
+
         success: false,
+
         canRegister: false,
+
         alreadyRegistered: true,
 
         message:
           'This Member is already registered in Matrimonial.',
 
         data: {
+
           id:
             existingUser.id,
 
@@ -335,80 +348,102 @@ export class MatrimonialUsersService {
       };
     }
 
-    // ===================================================
+
+    // =======================================================
     // CREATE MATRIMONIAL USER
-    // ===================================================
+    // =======================================================
 
     const user =
       new MatrimonialUser();
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // MEMBER ID
-    // ===================================================
+    // -------------------------------------------------------
 
     user.member_id =
       member.member_id;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // PROFILE CATEGORY
-    // ===================================================
+    // -------------------------------------------------------
 
     user.profile_category =
       data?.profile_category || null;
 
-    // ===================================================
-    // FATHER NAME
-    // ===================================================
+
+    // -------------------------------------------------------
+    // FAMILY DETAILS
+    // -------------------------------------------------------
 
     user.father_name =
       data?.father_name || null;
 
-    // ===================================================
-    // MOTHER NAME
-    // ===================================================
-
     user.mother_name =
       data?.mother_name || null;
 
-    // ===================================================
-    // FATHER GOTRAM
-    // ===================================================
+
+    // =======================================================
+    // FATHER OCCUPATION
+    // =======================================================
+
+    user.father_occupation =
+      data?.father_occupation
+        ? String(
+            data.father_occupation,
+          ).trim()
+        : null;
+
+
+    // =======================================================
+    // MOTHER OCCUPATION
+    // =======================================================
+
+    user.mother_occupation =
+      data?.mother_occupation
+        ? String(
+            data.mother_occupation,
+          ).trim()
+        : null;
+
+
+    // -------------------------------------------------------
+    // GOTRAM
+    // -------------------------------------------------------
 
     user.father_gotram =
       data?.father_gotram || null;
 
-    // ===================================================
-    // MOTHER GOTRAM
-    // ===================================================
-
     user.mother_gotram =
       data?.mother_gotram || null;
-
-    // ===================================================
-    // GRANDMOTHER GOTRAM
-    // ===================================================
 
     user.grandmother_gotram =
       data?.grandmother_gotram || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // NAKSHATRAM
-    // ===================================================
+    // -------------------------------------------------------
 
     user.nakshatram =
       data?.nakshatram || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // PADHAM
-    // ===================================================
+    // -------------------------------------------------------
 
     if (
       data?.padham === '' ||
       data?.padham === null ||
       data?.padham === undefined
     ) {
+
       user.padham = null;
+
     } else {
+
       const padhamNumber =
         Number(data.padham);
 
@@ -418,114 +453,111 @@ export class MatrimonialUsersService {
           : padhamNumber;
     }
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // RASI
-    // ===================================================
+    // -------------------------------------------------------
 
     user.rasi =
       data?.rasi || null;
 
-    // ===================================================
-    // COLOR
-    // ===================================================
+
+    // -------------------------------------------------------
+    // PERSONAL DETAILS
+    // -------------------------------------------------------
 
     user.color =
       data?.color || null;
 
-    // ===================================================
-    // HEIGHT
-    // ===================================================
-
     user.height =
       data?.height || null;
-
-    // ===================================================
-    // EDUCATION
-    // ===================================================
 
     user.education =
       data?.education || null;
 
-    // ===================================================
-    // ANNUAL INCOME
-    // ===================================================
-
     user.annual_income =
       data?.annual_income || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // ADDRESS
-    // ===================================================
+    // -------------------------------------------------------
 
     user.address =
       data?.address || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // FAMILY DETAILS
-    // ===================================================
+    // -------------------------------------------------------
 
     user.family_details =
       data?.family_details || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // BROTHER DETAILS
-    // ===================================================
+    // -------------------------------------------------------
 
     user.brother_details =
       data?.brother_details || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // SISTER DETAILS
-    // ===================================================
+    // -------------------------------------------------------
 
     user.sister_details =
       data?.sister_details || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // PROPERTY DETAILS
-    // ===================================================
+    // -------------------------------------------------------
 
     user.property_details =
       data?.property_details || null;
 
-    // ===================================================
+
+    // -------------------------------------------------------
     // PREFERRED REQUIREMENTS
-    // ===================================================
+    // -------------------------------------------------------
 
     user.preferred_requirements =
       data?.preferred_requirements || null;
 
 
-          // ===================================================
-    // PREFERENCE NAME
-    // ===================================================
+    // =======================================================
+    // AREA VOLUNTEER
+    // =======================================================
 
     user.preference_name =
       data?.preference_name
-        ? String(data.preference_name).trim()
+        ? String(
+            data.preference_name,
+          ).trim()
         : null;
 
-    // ===================================================
-    // PREFERENCE PHONE
-    // ===================================================
 
     user.preference_phone =
       data?.preference_phone
-        ? String(data.preference_phone).trim()
+        ? String(
+            data.preference_phone,
+          ).trim()
         : null;
 
-    // ===================================================
-    // PREFERENCE AREA / POSITION
-    // ===================================================
 
     user.preference_area =
       data?.preference_area
-        ? String(data.preference_area).trim()
+        ? String(
+            data.preference_area,
+          ).trim()
         : null;
 
-    // ===================================================
+
+    // =======================================================
     // CONSENT
-    // ===================================================
+    // =======================================================
 
     user.consent =
       data?.consent === true ||
@@ -534,28 +566,24 @@ export class MatrimonialUsersService {
       data?.consent === 1
         ? 1
         : 0;
-    // ===================================================
+
+
+    // =======================================================
     // PASSWORD
-    // ===================================================
-
-    /*
-      Matrimonial login password.
-
-      If frontend sends password,
-      hash it before storing.
-
-      Otherwise create a temporary password hash.
-    */
+    // =======================================================
 
     let password =
       data?.password
         ? String(data.password).trim()
         : '';
 
+
     if (!password) {
+
       password =
         `${member.member_id}_${Date.now()}`;
     }
+
 
     user.password =
       await bcrypt.hash(
@@ -563,39 +591,87 @@ export class MatrimonialUsersService {
         10,
       );
 
-    // ===================================================
+
+    // =======================================================
     // STATUS
-    // ===================================================
+    // =======================================================
 
     user.status =
       data?.status || 'Pending';
 
-    // ===================================================
-    // SAVE
-    // ===================================================
+
+    // =======================================================
+    // PHOTO
+    // =======================================================
+
+    if (photo) {
+
+      console.log(
+        '========== SAVING MEMBER PHOTO ==========',
+      );
+
+      console.log(
+        'Photo filename:',
+        photo.filename,
+      );
+
+
+      member.photo =
+        `/uploads/matrimonial/${photo.filename}`;
+
+
+      await this.memberRepository.save(
+        member,
+      );
+
+
+      console.log(
+        'Member photo saved:',
+        member.photo,
+      );
+    }
+
+
+    // =======================================================
+    // SAVE MATRIMONIAL USER
+    // =======================================================
 
     try {
+
       const savedUser =
         await this.userRepository.save(
           user,
         );
+
 
       console.log(
         'Matrimonial record saved:',
         savedUser.id,
       );
 
-      // =================================================
-      // SUCCESS
-      // =================================================
+
+      // -----------------------------------------------------
+      // RETURN UPDATED MEMBER
+      // -----------------------------------------------------
+
+      const savedMember =
+        await this.memberRepository.findOne({
+          where: {
+            member_id:
+              savedUser.member_id,
+          },
+        });
+
 
       return {
+
         success: true,
 
         message:
           'Matrimonial member added successfully',
 
         data: {
+
           id:
             savedUser.id,
 
@@ -606,37 +682,45 @@ export class MatrimonialUsersService {
             member.member_id,
 
           full_name:
-            member.full_name,
+            savedMember?.full_name || null,
 
           name:
-            member.full_name,
+            savedMember?.full_name || null,
 
           mobile:
-            member.mobile,
+            savedMember?.mobile || null,
 
           email:
-            member.email,
+            savedMember?.email || null,
 
           gender:
-            member.gender,
+            savedMember?.gender || null,
 
           occupation:
-            member.occupation,
+            savedMember?.occupation || null,
 
           date_of_birth:
-            member.date_of_birth,
+            savedMember?.date_of_birth || null,
 
           photo:
-            member.photo,
+            savedMember?.photo || null,
 
           matrimonial_photo:
             photo?.filename || null,
+
+          father_occupation:
+            savedUser.father_occupation || null,
+
+          mother_occupation:
+            savedUser.mother_occupation || null,
 
           status:
             savedUser.status,
         },
       };
+
     } catch (error) {
+
       console.error(
         '========== MATRIMONIAL DATABASE ERROR ==========',
       );
@@ -651,107 +735,138 @@ export class MatrimonialUsersService {
     }
   }
 
-  // =====================================================
-  // GET ALL MATRIMONIAL USERS
-  // =====================================================
+
+
+  // =========================================================
+  // FIND ALL
+  // =========================================================
 
   async findAll() {
+
     const matrimonialUsers =
       await this.userRepository.find({
+
         order: {
           created_at: 'DESC',
         },
+
       });
 
-    // ===================================================
-    // GET MEMBER DETAILS
-    // ===================================================
 
-    const result = await Promise.all(
-      matrimonialUsers.map(
-        async (matrimonial) => {
-          const member =
-            await this.memberRepository.findOne({
-              where: {
-                member_id:
-                  matrimonial.member_id,
-              },
-            });
+    const result =
+      await Promise.all(
 
-          return {
-            ...matrimonial,
+        matrimonialUsers.map(
+          async (matrimonial) => {
 
-            // Member details
-            full_name:
-              member?.full_name || null,
+            const member =
+              await this.memberRepository.findOne({
 
-            name:
-              member?.full_name || null,
+                where: {
+                  member_id:
+                    matrimonial.member_id,
+                },
 
-            mobile:
-              member?.mobile || null,
+              });
 
-            email:
-              member?.email || null,
 
-            gender:
-              member?.gender || null,
+            return {
 
-            occupation:
-              member?.occupation || null,
+              ...matrimonial,
 
-            date_of_birth:
-              member?.date_of_birth || null,
 
-            photo:
-              member?.photo || null,
+              // ------------------------------------------------
+              // MEMBER INFORMATION
+              // ------------------------------------------------
 
-            district:
-              member?.district || null,
+              full_name:
+                member?.full_name || null,
 
-            mandal:
-              member?.mandal || null,
+              name:
+                member?.full_name || null,
 
-            sangham:
-              member?.sangham || null,
-          };
-        },
-      ),
-    );
+              mobile:
+                member?.mobile || null,
+
+              email:
+                member?.email || null,
+
+              gender:
+                member?.gender || null,
+
+              occupation:
+                member?.occupation || null,
+
+              date_of_birth:
+                member?.date_of_birth || null,
+
+              photo:
+                member?.photo || null,
+
+
+              // ------------------------------------------------
+              // LOCATION
+              // ------------------------------------------------
+
+              district:
+                member?.district || null,
+
+              mandal:
+                member?.mandal || null,
+
+              sangham:
+                member?.sangham || null,
+            };
+          },
+        ),
+      );
+
 
     return result;
   }
 
-  // =====================================================
-  // GET ONE MATRIMONIAL USER
-  // =====================================================
+
+
+  // =========================================================
+  // FIND ONE
+  // =========================================================
 
   async findOne(id: number) {
+
     const matrimonial =
       await this.userRepository.findOne({
+
         where: {
           id,
         },
+
       });
+
 
     if (!matrimonial) {
       return null;
     }
 
-    // ===================================================
-    // GET MEMBER DETAILS
-    // ===================================================
 
     const member =
       await this.memberRepository.findOne({
+
         where: {
           member_id:
             matrimonial.member_id,
         },
+
       });
 
+
     return {
+
       ...matrimonial,
+
+
+      // -------------------------------------------------------
+      // MEMBER INFORMATION
+      // -------------------------------------------------------
 
       full_name:
         member?.full_name || null,
@@ -777,6 +892,11 @@ export class MatrimonialUsersService {
       photo:
         member?.photo || null,
 
+
+      // -------------------------------------------------------
+      // LOCATION
+      // -------------------------------------------------------
+
       district:
         member?.district || null,
 
@@ -788,15 +908,18 @@ export class MatrimonialUsersService {
     };
   }
 
-  // =====================================================
-  // UPDATE MATRIMONIAL USER
-  // =====================================================
+
+
+  // =========================================================
+  // UPDATE
+  // =========================================================
 
   async update(
     id: number,
     data: any,
     photo?: Express.Multer.File,
   ) {
+
     console.log(
       '========== MATRIMONIAL UPDATE ==========',
     );
@@ -816,285 +939,394 @@ export class MatrimonialUsersService {
       photo?.filename || 'No new photo',
     );
 
-    // ===================================================
-    // FIND MATRIMONIAL USER
-    // ===================================================
+
+    // =======================================================
+    // FIND MATRIMONIAL
+    // =======================================================
 
     const matrimonial =
       await this.userRepository.findOne({
+
         where: {
           id,
         },
+
       });
 
+
     if (!matrimonial) {
+
       throw new NotFoundException(
         'Matrimonial member not found',
       );
     }
 
-    // ===================================================
+
+    // =======================================================
+    // FIND MEMBER
+    // =======================================================
+
+    const member =
+      await this.memberRepository.findOne({
+
+        where: {
+          member_id:
+            matrimonial.member_id,
+        },
+
+      });
+
+
+    if (!member) {
+
+      throw new NotFoundException(
+        'Membership record not found',
+      );
+    }
+
+
+    // =======================================================
     // PROFILE CATEGORY
-    // ===================================================
+    // =======================================================
 
     if (
       data?.profile_category !== undefined
     ) {
+
       matrimonial.profile_category =
         data.profile_category;
     }
 
-    // ===================================================
+
+    // =======================================================
     // FATHER NAME
-    // ===================================================
+    // =======================================================
 
     if (
       data?.father_name !== undefined
     ) {
+
       matrimonial.father_name =
         data.father_name;
     }
 
-    // ===================================================
+
+    // =======================================================
     // MOTHER NAME
-    // ===================================================
+    // =======================================================
 
     if (
       data?.mother_name !== undefined
     ) {
+
       matrimonial.mother_name =
         data.mother_name;
     }
 
-    // ===================================================
-    // FATHER GOTRAM
-    // ===================================================
+
+    // =======================================================
+    // FATHER OCCUPATION
+    // =======================================================
+
+    if (
+      data?.father_occupation !== undefined
+    ) {
+
+      matrimonial.father_occupation =
+        data.father_occupation
+          ? String(
+              data.father_occupation,
+            ).trim()
+          : null;
+    }
+
+
+    // =======================================================
+    // MOTHER OCCUPATION
+    // =======================================================
+
+    if (
+      data?.mother_occupation !== undefined
+    ) {
+
+      matrimonial.mother_occupation =
+        data.mother_occupation
+          ? String(
+              data.mother_occupation,
+            ).trim()
+          : null;
+    }
+
+
+    // =======================================================
+    // GOTRAM
+    // =======================================================
 
     if (
       data?.father_gotram !== undefined
     ) {
+
       matrimonial.father_gotram =
         data.father_gotram;
     }
 
-    // ===================================================
-    // MOTHER GOTRAM
-    // ===================================================
 
     if (
       data?.mother_gotram !== undefined
     ) {
+
       matrimonial.mother_gotram =
         data.mother_gotram;
     }
 
-    // ===================================================
-    // GRANDMOTHER GOTRAM
-    // ===================================================
 
     if (
       data?.grandmother_gotram !== undefined
     ) {
+
       matrimonial.grandmother_gotram =
         data.grandmother_gotram;
     }
 
-    // ===================================================
+
+    // =======================================================
     // NAKSHATRAM
-    // ===================================================
+    // =======================================================
 
     if (
       data?.nakshatram !== undefined
     ) {
+
       matrimonial.nakshatram =
         data.nakshatram;
     }
 
-    // ===================================================
+
+    // =======================================================
     // PADHAM
-    // ===================================================
+    // =======================================================
 
     if (
       data?.padham === '' ||
       data?.padham === null
     ) {
+
       matrimonial.padham = null;
+
     } else if (
       data?.padham !== undefined
     ) {
+
       const padhamNumber =
         Number(data.padham);
 
+
       if (
-        !Number.isNaN(padhamNumber)
+        !Number.isNaN(
+          padhamNumber,
+        )
       ) {
+
         matrimonial.padham =
           padhamNumber;
       }
     }
 
-    // ===================================================
+
+    // =======================================================
     // RASI
-    // ===================================================
+    // =======================================================
 
     if (
       data?.rasi !== undefined
     ) {
+
       matrimonial.rasi =
         data.rasi;
     }
 
-    // ===================================================
+
+    // =======================================================
     // COLOR
-    // ===================================================
+    // =======================================================
 
     if (
       data?.color !== undefined
     ) {
+
       matrimonial.color =
         data.color;
     }
 
-    // ===================================================
+
+    // =======================================================
     // HEIGHT
-    // ===================================================
+    // =======================================================
 
     if (
       data?.height !== undefined
     ) {
+
       matrimonial.height =
         data.height;
     }
 
-    // ===================================================
+
+    // =======================================================
     // EDUCATION
-    // ===================================================
+    // =======================================================
 
     if (
       data?.education !== undefined
     ) {
+
       matrimonial.education =
         data.education;
     }
 
-    // ===================================================
+
+    // =======================================================
     // ANNUAL INCOME
-    // ===================================================
+    // =======================================================
 
     if (
       data?.annual_income !== undefined
     ) {
+
       matrimonial.annual_income =
         data.annual_income;
     }
 
-    // ===================================================
+
+    // =======================================================
     // ADDRESS
-    // ===================================================
+    // =======================================================
 
     if (
       data?.address !== undefined
     ) {
+
       matrimonial.address =
         data.address;
     }
 
-    // ===================================================
+
+    // =======================================================
     // FAMILY DETAILS
-    // ===================================================
+    // =======================================================
 
     if (
       data?.family_details !== undefined
     ) {
+
       matrimonial.family_details =
         data.family_details;
     }
 
-    // ===================================================
+
+    // =======================================================
     // BROTHER DETAILS
-    // ===================================================
+    // =======================================================
 
     if (
       data?.brother_details !== undefined
     ) {
+
       matrimonial.brother_details =
         data.brother_details;
     }
 
-    // ===================================================
+
+    // =======================================================
     // SISTER DETAILS
-    // ===================================================
+    // =======================================================
 
     if (
       data?.sister_details !== undefined
     ) {
+
       matrimonial.sister_details =
         data.sister_details;
     }
 
-    // ===================================================
+
+    // =======================================================
     // PROPERTY DETAILS
-    // ===================================================
+    // =======================================================
 
     if (
       data?.property_details !== undefined
     ) {
+
       matrimonial.property_details =
         data.property_details;
     }
 
-    // ===================================================
+
+    // =======================================================
     // PREFERRED REQUIREMENTS
-    // ===================================================
+    // =======================================================
 
     if (
       data?.preferred_requirements !== undefined
     ) {
+
       matrimonial.preferred_requirements =
         data.preferred_requirements;
     }
 
 
-        // ===================================================
-    // PREFERENCE NAME
-    // ===================================================
+    // =======================================================
+    // AREA VOLUNTEER
+    // =======================================================
 
     if (
       data?.preference_name !== undefined
     ) {
+
       matrimonial.preference_name =
-        data.preference_name;
+        data.preference_name
+          ? String(
+              data.preference_name,
+            ).trim()
+          : null;
     }
 
-    // ===================================================
-    // PREFERENCE PHONE
-    // ===================================================
 
     if (
       data?.preference_phone !== undefined
     ) {
+
       matrimonial.preference_phone =
-        data.preference_phone;
+        data.preference_phone
+          ? String(
+              data.preference_phone,
+            ).trim()
+          : null;
     }
 
-    // ===================================================
-    // PREFERENCE AREA / POSITION
-    // ===================================================
 
     if (
       data?.preference_area !== undefined
     ) {
+
       matrimonial.preference_area =
-        data.preference_area;
+        data.preference_area
+          ? String(
+              data.preference_area,
+            ).trim()
+          : null;
     }
 
-    // ===================================================
+
+    // =======================================================
     // CONSENT
-    // ===================================================
+    // =======================================================
 
     if (
       data?.consent !== undefined
     ) {
+
       matrimonial.consent =
         data.consent === true ||
         data.consent === 'true' ||
@@ -1103,15 +1335,18 @@ export class MatrimonialUsersService {
           ? 1
           : 0;
     }
-    // ===================================================
+
+
+    // =======================================================
     // PASSWORD
-    // ===================================================
+    // =======================================================
 
     if (
       data?.password &&
       typeof data.password === 'string' &&
       data.password.trim() !== ''
     ) {
+
       matrimonial.password =
         await bcrypt.hash(
           data.password.trim(),
@@ -1119,79 +1354,157 @@ export class MatrimonialUsersService {
         );
     }
 
-    // ===================================================
+
+    // =======================================================
     // STATUS
-    // ===================================================
+    // =======================================================
 
     if (
       data?.status !== undefined
     ) {
+
       matrimonial.status =
         data.status;
     }
 
-    // ===================================================
-    // SAVE
-    // ===================================================
+
+    // =======================================================
+    // UPDATE PHOTO
+    // =======================================================
+
+    if (photo) {
+
+      console.log(
+        '========== UPDATING MEMBER PHOTO ==========',
+      );
+
+      console.log(
+        'Member ID:',
+        member.member_id,
+      );
+
+      console.log(
+        'Old Photo:',
+        member.photo,
+      );
+
+      console.log(
+        'New Photo Filename:',
+        photo.filename,
+      );
+
+
+      member.photo =
+        `/uploads/matrimonial/${photo.filename}`;
+
+
+      await this.memberRepository.save(
+        member,
+      );
+
+
+      console.log(
+        'Member photo updated:',
+        member.photo,
+      );
+    }
+
+
+    // =======================================================
+    // SAVE MATRIMONIAL
+    // =======================================================
 
     try {
+
       const updatedUser =
         await this.userRepository.save(
           matrimonial,
         );
 
-      // =================================================
-      // GET MEMBER DETAILS
-      // =================================================
-
-      const member =
-        await this.memberRepository.findOne({
-          where: {
-            member_id:
-              updatedUser.member_id,
-          },
-        });
 
       console.log(
         'Matrimonial member updated:',
         updatedUser.id,
       );
 
+
+      // -----------------------------------------------------
+      // GET UPDATED MEMBER
+      // -----------------------------------------------------
+
+      const updatedMember =
+        await this.memberRepository.findOne({
+
+          where: {
+            member_id:
+              updatedUser.member_id,
+          },
+
+        });
+
+
+      // =====================================================
+      // RETURN UPDATED DATA
+      // =====================================================
+
       return {
+
         success: true,
 
         message:
           'Matrimonial member updated successfully',
 
         data: {
+
           ...updatedUser,
 
+
+          // -------------------------------------------------
+          // MEMBER DETAILS
+          // -------------------------------------------------
+
           full_name:
-            member?.full_name || null,
+            updatedMember?.full_name || null,
 
           name:
-            member?.full_name || null,
+            updatedMember?.full_name || null,
 
           mobile:
-            member?.mobile || null,
+            updatedMember?.mobile || null,
 
           email:
-            member?.email || null,
+            updatedMember?.email || null,
 
           gender:
-            member?.gender || null,
+            updatedMember?.gender || null,
 
           occupation:
-            member?.occupation || null,
+            updatedMember?.occupation || null,
 
           date_of_birth:
-            member?.date_of_birth || null,
+            updatedMember?.date_of_birth || null,
 
           photo:
-            member?.photo || null,
+            updatedMember?.photo || null,
+
+
+          // -------------------------------------------------
+          // LOCATION
+          // -------------------------------------------------
+
+          district:
+            updatedMember?.district || null,
+
+          mandal:
+            updatedMember?.mandal || null,
+
+          sangham:
+            updatedMember?.sangham || null,
         },
       };
+
     } catch (error) {
+
       console.error(
         '========== UPDATE DATABASE ERROR ==========',
       );
@@ -1206,26 +1519,44 @@ export class MatrimonialUsersService {
     }
   }
 
-  // =====================================================
-  // DELETE MATRIMONIAL USER
-  // =====================================================
+
+
+  // =========================================================
+  // DELETE
+  // =========================================================
 
   async remove(id: number) {
-    const member = await this.userRepository.findOne({
-      where: { id },
-    });
+
+    const member =
+      await this.userRepository.findOne({
+
+        where: {
+          id,
+        },
+
+      });
+
 
     if (!member) {
+
       throw new NotFoundException(
         `Matrimonial member with ID ${id} not found`,
       );
     }
 
-    await this.userRepository.remove(member);
+
+    await this.userRepository.remove(
+      member,
+    );
+
 
     return {
-      message: 'Matrimonial profile deleted successfully',
+
+      message:
+        'Matrimonial profile deleted successfully',
+
       id,
     };
   }
+
 }
