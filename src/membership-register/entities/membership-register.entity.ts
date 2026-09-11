@@ -90,7 +90,6 @@ export class MembershipRegister {
   })
   occupation: string | null;
 
-  
   /* =====================================================
      GENDER & DOB
   ===================================================== */
@@ -151,18 +150,20 @@ export class MembershipRegister {
 
   /* =====================================================
      EXISTING MEMBERSHIP DETAILS
+     DB: VARCHAR(10)
+     Values: Yes / No
   ===================================================== */
 
   @Column({
-    type: "enum",
-    enum: ["Yes", "No"],
+    type: "varchar",
+    length: 10,
     nullable: true,
   })
   is_existing_mahashaba_member: string | null;
 
   @Column({
-    type: "enum",
-    enum: ["Yes", "No"],
+    type: "varchar",
+    length: 10,
     nullable: true,
   })
   is_existing_sangam_member: string | null;
@@ -198,9 +199,6 @@ export class MembershipRegister {
 
   /* =====================================================
      OLD MAHASHABA PAYMENT DETAILS
-     
-     Kept for existing database records.
-     New membership client does NOT need to send these.
   ===================================================== */
 
   @Column({
@@ -240,9 +238,6 @@ export class MembershipRegister {
 
   /* =====================================================
      OLD SANGAM PAYMENT DETAILS
-     
-     Kept for existing database records.
-     New membership client does NOT need to send these.
   ===================================================== */
 
   @Column({
@@ -294,3 +289,4 @@ export class MembershipRegister {
   })
   updated_at: Date;
 }
+
