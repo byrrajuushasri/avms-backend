@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -13,13 +14,13 @@ export class CreateMembershipRegisterDto {
   @IsString()
   full_name: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  surname?: string;
+  surname: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  location?: string;
+  father_name: string;
 
   // =========================================================
   // CONTACT
@@ -45,6 +46,7 @@ export class CreateMembershipRegisterDto {
   @IsString()
   occupation: string;
 
+  
   @IsNotEmpty()
   @IsString()
   gender: string;
@@ -65,6 +67,10 @@ export class CreateMembershipRegisterDto {
   // LOCATION
   // =========================================================
 
+  @IsNotEmpty()
+  @IsString()
+  location: string;
+
   @IsOptional()
   @IsString()
   district?: string;
@@ -78,7 +84,23 @@ export class CreateMembershipRegisterDto {
   sangham?: string;
 
   // =========================================================
-  // EXECUTIVE
+  // EXISTING MAHASHABA MEMBER
+  // =========================================================
+
+  @IsNotEmpty()
+  @IsIn(['Yes', 'No'])
+  is_existing_mahashaba_member: string;
+
+  // =========================================================
+  // EXISTING SANGAM MEMBER
+  // =========================================================
+
+  @IsNotEmpty()
+  @IsIn(['Yes', 'No'])
+  is_existing_sangam_member: string;
+
+  // =========================================================
+  // EXECUTIVE DETAILS
   // =========================================================
 
   @IsOptional()
@@ -96,50 +118,4 @@ export class CreateMembershipRegisterDto {
   @IsOptional()
   @IsString()
   status?: string;
-
-  // =========================================================
-  // MAHASHABA PAYMENT
-  // =========================================================
-
-  @IsOptional()
-  @IsString()
-  mahashaba_payment_status?: string;
-
-  @IsOptional()
-  @IsString()
-  mahashaba_payment_method?: string;
-
-  @IsOptional()
-  @IsString()
-  mahashaba_receipt_number?: string;
-
-  @IsOptional()
-  mahashaba_amount_paid?: number | string;
-
-  @IsOptional()
-  @IsString()
-  mahashaba_payment_date?: string;
-
-  // =========================================================
-  // SANGAM PAYMENT
-  // =========================================================
-
-  @IsOptional()
-  @IsString()
-  sangam_payment_status?: string;
-
-  @IsOptional()
-  @IsString()
-  sangam_payment_method?: string;
-
-  @IsOptional()
-  @IsString()
-  sangam_receipt_number?: string;
-
-  @IsOptional()
-  sangam_amount_paid?: number | string;
-
-  @IsOptional()
-  @IsString()
-  sangam_payment_date?: string;
 }

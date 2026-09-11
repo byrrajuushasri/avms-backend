@@ -87,6 +87,9 @@ export class MembershipRegisterService {
     member.surname =
       dto.surname?.trim() || null;
 
+    member.father_name =
+      dto.father_name?.trim() || null;
+
     member.location =
       dto.location?.trim() || null;
 
@@ -122,7 +125,9 @@ export class MembershipRegisterService {
     // =======================================================
 
     member.occupation =
-      dto.occupation?.trim();
+      dto.occupation?.trim() || null;
+
+    
 
     member.gender =
       dto.gender?.trim();
@@ -136,6 +141,20 @@ export class MembershipRegisterService {
 
     member.gotram =
       dto.gotram?.trim() || null;
+
+    // =======================================================
+    // EXISTING MAHASHABA MEMBER
+    // =======================================================
+
+    member.is_existing_mahashaba_member =
+      dto.is_existing_mahashaba_member?.trim() || null;
+
+    // =======================================================
+    // EXISTING SANGAM MEMBER
+    // =======================================================
+
+    member.is_existing_sangam_member =
+      dto.is_existing_sangam_member?.trim() || null;
 
     // =======================================================
     // TEMP MEMBER ID
@@ -152,7 +171,7 @@ export class MembershipRegisterService {
       'user';
 
     // =======================================================
-    // LOCATION
+    // LOCATION DETAILS
     // =======================================================
 
     member.district =
@@ -179,48 +198,43 @@ export class MembershipRegisterService {
       'Active';
 
     // =======================================================
-    // MAHASHABA PAYMENT
+    // NO PAYMENT DATA HERE
+    //
+    // New membership client does NOT submit payment details.
+    //
+    // Payment columns can remain in the database/entity
+    // for old records or admin-side management.
     // =======================================================
 
     member.mahashaba_payment_status =
-      dto.mahashaba_payment_status || 'Free';
+      null;
 
     member.mahashaba_payment_method =
-      dto.mahashaba_payment_method?.trim() || null;
+      null;
 
     member.mahashaba_receipt_number =
-      dto.mahashaba_receipt_number?.trim() || null;
+      null;
 
     member.mahashaba_amount_paid =
-      dto.mahashaba_amount_paid !== undefined &&
-      dto.mahashaba_amount_paid !== ''
-        ? Number(dto.mahashaba_amount_paid)
-        : null;
+      null;
 
     member.mahashaba_payment_date =
-      dto.mahashaba_payment_date || null;
-
-    // =======================================================
-    // SANGAM PAYMENT
-    // =======================================================
+      null;
 
     member.sangam_payment_status =
-      dto.sangam_payment_status || 'Free';
+      null;
 
     member.sangam_payment_method =
-      dto.sangam_payment_method?.trim() || null;
+      null;
 
     member.sangam_receipt_number =
-      dto.sangam_receipt_number?.trim() || null;
+      null;
 
     member.sangam_amount_paid =
-      dto.sangam_amount_paid !== undefined &&
-      dto.sangam_amount_paid !== ''
-        ? Number(dto.sangam_amount_paid)
-        : null;
+      null;
 
     member.sangam_payment_date =
-      dto.sangam_payment_date || null;
+      null;
 
     // =======================================================
     // EXECUTIVE DETAILS
@@ -613,6 +627,13 @@ export class MembershipRegisterService {
     }
 
     if (
+      dto.father_name !== undefined
+    ) {
+      member.father_name =
+        dto.father_name.trim() || null;
+    }
+
+    if (
       dto.location !== undefined
     ) {
       member.location =
@@ -649,9 +670,10 @@ export class MembershipRegisterService {
       dto.occupation !== undefined
     ) {
       member.occupation =
-        dto.occupation.trim();
+        dto.occupation.trim() || null;
     }
 
+   
     // =======================================================
     // GENDER
     // =======================================================
@@ -690,6 +712,32 @@ export class MembershipRegisterService {
     ) {
       member.gotram =
         dto.gotram.trim() || null;
+    }
+
+    // =======================================================
+    // EXISTING MAHASHABA MEMBER
+    // =======================================================
+
+    if (
+      dto.is_existing_mahashaba_member !==
+      undefined
+    ) {
+      member.is_existing_mahashaba_member =
+        dto.is_existing_mahashaba_member.trim() ||
+        null;
+    }
+
+    // =======================================================
+    // EXISTING SANGAM MEMBER
+    // =======================================================
+
+    if (
+      dto.is_existing_sangam_member !==
+      undefined
+    ) {
+      member.is_existing_sangam_member =
+        dto.is_existing_sangam_member.trim() ||
+        null;
     }
 
     // =======================================================
@@ -792,7 +840,12 @@ export class MembershipRegisterService {
     }
 
     // =======================================================
-    // MAHASHABA PAYMENT
+    // PAYMENT
+    //
+    // Payment is NOT handled by the new client registration.
+    //
+    // Existing admin/payment update functionality is kept
+    // below so old records are not affected.
     // =======================================================
 
     if (
@@ -800,7 +853,7 @@ export class MembershipRegisterService {
       undefined
     ) {
       member.mahashaba_payment_status =
-        dto.mahashaba_payment_status.trim();
+        dto.mahashaba_payment_status.trim() || null;
     }
 
     if (
@@ -860,7 +913,7 @@ export class MembershipRegisterService {
       undefined
     ) {
       member.sangam_payment_status =
-        dto.sangam_payment_status.trim();
+        dto.sangam_payment_status.trim() || null;
     }
 
     if (
@@ -1003,8 +1056,10 @@ export class MembershipRegisterService {
 
     return {
       success: true,
+
       message:
         'Member deleted successfully',
+
       id,
     };
   }

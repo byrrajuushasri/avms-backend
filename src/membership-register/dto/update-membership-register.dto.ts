@@ -1,13 +1,11 @@
 import {
+  IsIn,
+  IsNumber,
   IsOptional,
   IsString,
-} from 'class-validator';
+} from "class-validator";
 
 export class UpdateMembershipRegisterDto {
-  // =========================================================
-  // BASIC DETAILS
-  // =========================================================
-
   @IsOptional()
   @IsString()
   full_name?: string;
@@ -18,11 +16,7 @@ export class UpdateMembershipRegisterDto {
 
   @IsOptional()
   @IsString()
-  location?: string;
-
-  // =========================================================
-  // CONTACT
-  // =========================================================
+  father_name?: string;
 
   @IsOptional()
   @IsString()
@@ -36,14 +30,11 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   password?: string;
 
-  // =========================================================
-  // USER DETAILS
-  // =========================================================
-
   @IsOptional()
   @IsString()
   occupation?: string;
 
+  
   @IsOptional()
   @IsString()
   gender?: string;
@@ -52,17 +43,13 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   date_of_birth?: string;
 
-  // =========================================================
-  // GOTRAM
-  // =========================================================
-
   @IsOptional()
   @IsString()
   gotram?: string;
 
-  // =========================================================
-  // LOCATION
-  // =========================================================
+  @IsOptional()
+  @IsString()
+  location?: string;
 
   @IsOptional()
   @IsString()
@@ -76,9 +63,13 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   sangham?: string;
 
-  // =========================================================
-  // EXECUTIVE
-  // =========================================================
+  @IsOptional()
+  @IsIn(["Yes", "No"])
+  is_existing_mahashaba_member?: string;
+
+  @IsOptional()
+  @IsIn(["Yes", "No"])
+  is_existing_sangam_member?: string;
 
   @IsOptional()
   @IsString()
@@ -88,10 +79,6 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   designation?: string;
 
-  // =========================================================
-  // ROLE / STATUS
-  // =========================================================
-
   @IsOptional()
   @IsString()
   role?: string;
@@ -100,9 +87,10 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   status?: string;
 
-  // =========================================================
-  // MAHASHABA PAYMENT
-  // =========================================================
+  // ==========================================
+  // PAYMENT FIELDS
+  // Keep these for existing admin/payment updates
+  // ==========================================
 
   @IsOptional()
   @IsString()
@@ -117,15 +105,12 @@ export class UpdateMembershipRegisterDto {
   mahashaba_receipt_number?: string;
 
   @IsOptional()
-  mahashaba_amount_paid?: number | string;
+  @IsNumber()
+  mahashaba_amount_paid?: number;
 
   @IsOptional()
   @IsString()
   mahashaba_payment_date?: string;
-
-  // =========================================================
-  // SANGAM PAYMENT
-  // =========================================================
 
   @IsOptional()
   @IsString()
@@ -140,8 +125,8 @@ export class UpdateMembershipRegisterDto {
   sangam_receipt_number?: string;
 
   @IsOptional()
-  @IsString()
-  sangam_amount_paid?: number | string;
+  @IsNumber()
+  sangam_amount_paid?: number;
 
   @IsOptional()
   @IsString()

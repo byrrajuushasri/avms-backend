@@ -38,146 +38,117 @@ export class MatrimonialUsersService {
   // CHECK MEMBER
   // =========================================================
 
-  async checkMember(data: any) {
-
-    console.log(
-      '========== CHECK MEMBER BEFORE MATRIMONIAL ==========',
-    );
-
-    const mobile =
-      data?.mobile !== undefined &&
-      data?.mobile !== null
-        ? String(data.mobile).trim()
-        : '';
-
-    const email =
-      data?.email !== undefined &&
-      data?.email !== null
-        ? String(data.email).trim().toLowerCase()
-        : '';
-
-    console.log('Mobile:', mobile);
-    console.log('Email:', email);
 
 
-    if (!mobile && !email) {
-      return {
-        success: false,
-        canRegister: false,
-        message:
-          'Please enter Mobile Number or Email.',
-      };
-    }
+async checkMember(data: any) {
 
+  console.log(
+    '========== CHECK MEMBER BEFORE MATRIMONIAL ==========',
+  );
 
-    const conditions: any[] = [];
+  const mobile =
+    data?.mobile !== undefined &&
+    data?.mobile !== null
+      ? String(data.mobile).trim()
+      : '';
 
+  // Email is no longer required for matrimonial verification
+  const email =
+    data?.email !== undefined &&
+    data?.email !== null
+      ? String(data.email).trim().toLowerCase()
+      : '';
 
-    if (mobile) {
-      conditions.push({
+  console.log('Mobile:', mobile);
+
+  if (!mobile) {
+    return {
+      success: false,
+      canRegister: false,
+      message:
+        'Please enter a valid Mobile Number.',
+    };
+  }
+
+  // =======================================================
+  // FIND MEMBER BY MOBILE ONLY
+  // =======================================================
+
+  const member =
+    await this.memberRepository.findOne({
+      where: {
         mobile,
-      });
-    }
+      },
+    });
 
+  if (!member) {
+    return {
+      success: false,
+      canRegister: false,
+      message:
+        'Please register as a member first. Then you can register for Matrimonial.',
+    };
+  }
 
-    if (email) {
-      conditions.push({
-        email,
-      });
-    }
+  console.log(
+    'Member found:',
+    member.member_id,
+  );
 
+  console.log(
+    'Member Name:',
+    member.full_name,
+  );
 
-    const member =
-      await this.memberRepository.findOne({
-        where: conditions,
-      });
+  console.log(
+    'Father Name:',
+    member.father_name,
+  );
 
+  console.log(
+    'Member Mobile:',
+    member.mobile,
+  );
 
-    if (!member) {
-      return {
-        success: false,
-        canRegister: false,
-        message:
-          'Please register as a member first. Then you can register for Matrimonial.',
-      };
-    }
+  // =======================================================
+  // CHECK EXISTING MATRIMONIAL
+  // =======================================================
 
+  const existingMatrimonial =
+    await this.userRepository.findOne({
+      where: {
+        member_id: member.member_id,
+      },
+    });
 
-    console.log(
-      'Member found:',
-      member.member_id,
-    );
+  // =======================================================
+  // ALREADY REGISTERED
+  // =======================================================
 
-
-    const existingMatrimonial =
-      await this.userRepository.findOne({
-        where: {
-          member_id: member.member_id,
-        },
-      });
-
-
-    if (existingMatrimonial) {
-
-      return {
-        success: false,
-        canRegister: false,
-        alreadyRegistered: true,
-
-        message:
-          'This Member is already registered in Matrimonial.',
-
-        data: {
-
-          member_id:
-            member.member_id,
-
-          matrimonial_id:
-            existingMatrimonial.id,
-
-          full_name:
-            member.full_name,
-
-          mobile:
-            member.mobile,
-
-          email:
-            member.email,
-
-          gender:
-            member.gender,
-
-          occupation:
-            member.occupation,
-
-          date_of_birth:
-            member.date_of_birth,
-
-          photo:
-            member.photo,
-        },
-      };
-    }
-
+  if (existingMatrimonial) {
 
     return {
-
-      success: true,
-
-      canRegister: true,
-
-      alreadyRegistered: false,
+      success: false,
+      canRegister: false,
+      alreadyRegistered: true,
 
       message:
-        'Member verified. You can register for Matrimonial.',
+        'This Member is already registered in Matrimonial.',
 
       data: {
 
         member_id:
           member.member_id,
 
+        matrimonial_id:
+          existingMatrimonial.id,
+
         full_name:
           member.full_name,
+
+        // IMPORTANT
+        father_name:
+          member.father_name || null,
 
         mobile:
           member.mobile,
@@ -199,6 +170,55 @@ export class MatrimonialUsersService {
       },
     };
   }
+
+  // =======================================================
+  // VERIFIED MEMBER
+  // =======================================================
+
+  return {
+
+    success: true,
+
+    canRegister: true,
+
+    alreadyRegistered: false,
+
+    message:
+      'Member verified. You can now complete the Matrimonial form.',
+
+    data: {
+
+      member_id:
+        member.member_id,
+
+      full_name:
+        member.full_name,
+
+      // IMPORTANT
+      father_name:
+        member.father_name || null,
+
+      mobile:
+        member.mobile,
+
+      email:
+        member.email,
+
+      gender:
+        member.gender,
+
+      occupation:
+        member.occupation,
+
+      date_of_birth:
+        member.date_of_birth,
+
+      photo:
+        member.photo,
+    },
+  };
+}
+
 
 
 

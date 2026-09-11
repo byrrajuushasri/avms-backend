@@ -11,6 +11,10 @@ export class MembershipRegister {
   @PrimaryGeneratedColumn()
   id: number;
 
+  /* =====================================================
+     MEMBER ID
+  ===================================================== */
+
   @Column({
     type: "varchar",
     length: 30,
@@ -18,11 +22,29 @@ export class MembershipRegister {
   })
   member_id: string;
 
+  /* =====================================================
+     PERSONAL DETAILS
+  ===================================================== */
+
   @Column({
     type: "varchar",
     length: 150,
   })
   full_name: string;
+
+  @Column({
+    type: "varchar",
+    length: 100,
+    nullable: true,
+  })
+  surname: string | null;
+
+  @Column({
+    type: "varchar",
+    length: 100,
+    nullable: true,
+  })
+  father_name: string | null;
 
   @Column({
     type: "varchar",
@@ -57,11 +79,21 @@ export class MembershipRegister {
   })
   photo: string | null;
 
+  /* =====================================================
+     EDUCATION & OCCUPATION
+  ===================================================== */
+
   @Column({
     type: "varchar",
     length: 100,
+    nullable: true,
   })
-  occupation: string;
+  occupation: string | null;
+
+  
+  /* =====================================================
+     GENDER & DOB
+  ===================================================== */
 
   @Column({
     type: "varchar",
@@ -91,6 +123,13 @@ export class MembershipRegister {
 
   @Column({
     type: "varchar",
+    length: 150,
+    nullable: true,
+  })
+  location: string | null;
+
+  @Column({
+    type: "varchar",
     length: 100,
     nullable: true,
   })
@@ -111,20 +150,44 @@ export class MembershipRegister {
   sangham: string | null;
 
   /* =====================================================
+     EXISTING MEMBERSHIP DETAILS
+  ===================================================== */
+
+  @Column({
+    type: "enum",
+    enum: ["Yes", "No"],
+    nullable: true,
+  })
+  is_existing_mahashaba_member: string | null;
+
+  @Column({
+    type: "enum",
+    enum: ["Yes", "No"],
+    nullable: true,
+  })
+  is_existing_sangam_member: string | null;
+
+  /* =====================================================
      COMMUNITY MEMBERSHIP
   ===================================================== */
 
   @Column({
     type: "varchar",
     length: 100,
+    nullable: true,
   })
-  executive_body: string;
+  executive_body: string | null;
 
   @Column({
     type: "varchar",
     length: 100,
+    nullable: true,
   })
-  designation: string;
+  designation: string | null;
+
+  /* =====================================================
+     STATUS
+  ===================================================== */
 
   @Column({
     type: "varchar",
@@ -134,14 +197,18 @@ export class MembershipRegister {
   status: string;
 
   /* =====================================================
-     MAHASHABA PAYMENT
+     OLD MAHASHABA PAYMENT DETAILS
+     
+     Kept for existing database records.
+     New membership client does NOT need to send these.
   ===================================================== */
 
   @Column({
     type: "varchar",
     length: 30,
+    nullable: true,
   })
-  mahashaba_payment_status: string;
+  mahashaba_payment_status: string | null;
 
   @Column({
     type: "varchar",
@@ -172,14 +239,18 @@ export class MembershipRegister {
   mahashaba_payment_date: string | null;
 
   /* =====================================================
-     SANGAM PAYMENT
+     OLD SANGAM PAYMENT DETAILS
+     
+     Kept for existing database records.
+     New membership client does NOT need to send these.
   ===================================================== */
 
   @Column({
     type: "varchar",
     length: 30,
+    nullable: true,
   })
-  sangam_payment_status: string;
+  sangam_payment_status: string | null;
 
   @Column({
     type: "varchar",
@@ -208,24 +279,6 @@ export class MembershipRegister {
     nullable: true,
   })
   sangam_payment_date: string | null;
-
-  /* =====================================================
-     ADDITIONAL DETAILS
-  ===================================================== */
-
-  @Column({
-    type: "varchar",
-    length: 100,
-    nullable: true,
-  })
-  surname: string | null;
-
-  @Column({
-    type: "varchar",
-    length: 100,
-    nullable: true,
-  })
-  location: string | null;
 
   /* =====================================================
      TIMESTAMPS
