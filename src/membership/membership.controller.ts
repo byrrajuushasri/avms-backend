@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 
@@ -16,48 +17,38 @@ export class MembershipController {
     private readonly membershipService: MembershipService,
   ) {}
 
-  // ============================================
-  // CREATE
-  // POST /membership
-  // ============================================
-
   @Post()
   create(
     @Body() createMembershipDto: CreateMembershipDto,
   ) {
-    return this.membershipService.create(
-      createMembershipDto,
-    );
+    return this.membershipService.create(createMembershipDto);
   }
-
-  // ============================================
-  // GET ALL
-  // GET /membership
-  // ============================================
 
   @Get()
   findAll() {
     return this.membershipService.findAll();
   }
 
-  // ============================================
-  // GET BY MEMBER ID
-  // GET /membership/member/TVM00006
-  // ============================================
-
   @Get('member/:member_id')
   findByMemberId(
     @Param('member_id') member_id: string,
   ) {
-    return this.membershipService.findByMemberId(
-      member_id,
-    );
+    return this.membershipService.findByMemberId(member_id);
   }
 
-  // ============================================
-  // GET BY ID
-  // GET /membership/1
-  // ============================================
+  // ✅ UPDATE MEMBER PROFILE
+  @Patch('member/:id')
+  updateMemberProfile(
+    @Param('id', ParseIntPipe) id: number,
+    @Body()
+    body: {
+      full_name: string;
+      email: string;
+      mobile: string;
+    },
+  ) {
+    return this.membershipService.updateMemberProfile(id, body);
+  }
 
   @Get(':id')
   findOne(
