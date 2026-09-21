@@ -266,5 +266,165 @@ export class MembershipService {
       },
     };
   }
+
+  // ============================================
+// AUTHORIZE MEMBER FOR MATRIMONY
+//
+// PATCH /membership/member/:id/authorize-matrimony
+// ============================================
+
+async authorizeMatrimony(
+  id: number,
+  expiryDate: string,
+) {
+  const member =
+    await this.memberRepository.findOne({
+      where: {
+        id,
+      },
+    });
+
+  if (!member) {
+    throw new NotFoundException(
+      'Member not found',
+    );
+  }
+
+  // ==========================================
+  // MEMBER STATUS CHECK
+  // ==========================================
+
+  if (member.status !== 'Active') {
+    throw new BadRequestException(
+      'Only Active members can be authorised for matrimony',
+    );
+  }
+
+  // ==========================================
+  // EXPIRY DATE VALIDATION
+  // ==========================================
+
+  if (!expiryDate) {
+    throw new BadRequestException(
+      'Matrimony expiry date is required',
+    );
+  }
+
+  const expiry = new Date(expiryDate);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+
+  if (expiry <= today) {
+    throw new BadRequestException(
+      'Expiry date must be a future date',
+    );
+  }
+
+  // ==========================================
+  // ALREADY AUTHORISED CHECK
+  // ==========================================
+
+  if (
+    member.matrimony_authorised &&
+    member.matrimony_code
+  ) {
+    throw new ConflictException(
+      `Matrimony already authorised. Code: ${member.matrimony_code}`,
+    );
+  }
+
+  // ==========================================
+  // GENERATE MATRIMONY CODE
+  //
+  // Example:
+  // AVMS0101001
+  // ==========================================
+
+  const lastMember =
+    await this.memberRepository
+      .createQueryBuilder('member')
+      .where(
+        'member.matrimony_code IS NOT NULL',
+      )
+      .orderBy(
+        'member.id',
+        'DESC',
+      )
+      .getOne();
+
+  let nextNumber = 1;
+
+  if (
+    lastMember &&
+    lastMember.matrimony_code
+  ) {
+    const match =
+      lastMember.matrimony_code.match(
+        /(\d+)$/,
+      );
+
+    if (match) {
+      nextNumber =
+        Number(match[1]) + 1;
+    }
+  }
+
+  const matrimonyCode =
+    `AVMS${String(nextNumber).padStart(7, '0')}`;
+
+  // ==========================================
+  // SAVE AUTHORISATION
+  // ==========================================
+
+  member.matrimony_code =
+    matrimonyCode;
+
+  member.matrimony_authorised =
+    true;
+
+  member.matrimony_authorised_date =
+    new Date();
+
+  member.matrimony_expiry_date =
+    expiry;
+
+  const updatedMember =
+    await this.memberRepository.save(
+      member,
+    );
+
+  // ==========================================
+  // RESPONSE
+  // ==========================================
+
+  return {
+    message:
+      'Matrimony authorised successfully.',
+
+    member: {
+      id: updatedMember.id,
+      member_id:
+        updatedMember.member_id,
+      full_name:
+        updatedMember.full_name,
+      mobile:
+        updatedMember.mobile,
+
+      matrimony_code:
+        updatedMember.matrimony_code,
+
+      matrimony_authorised:
+        updatedMember.matrimony_authorised,
+
+      matrimony_authorised_date:
+        updatedMember.matrimony_authorised_date,
+
+      matrimony_expiry_date:
+        updatedMember.matrimony_expiry_date,
+    },
+  };
+}
 }
 

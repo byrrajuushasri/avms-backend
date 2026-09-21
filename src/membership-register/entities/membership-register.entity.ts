@@ -22,6 +22,13 @@ export class MembershipRegister {
   })
   member_id: string;
 
+  @Column({
+  type: "varchar",
+  length: 20,
+  unique: true,
+  nullable: true,
+  })
+  avs_id: string | null;
   /* =====================================================
      PERSONAL DETAILS
   ===================================================== */
@@ -275,6 +282,8 @@ export class MembershipRegister {
   })
   sangam_payment_date: string | null;
 
+
+  
   /* =====================================================
      TIMESTAMPS
   ===================================================== */

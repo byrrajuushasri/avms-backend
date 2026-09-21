@@ -2,12 +2,16 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 
 import * as bcrypt from 'bcrypt';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  DataSource,
+  Repository,
+} from 'typeorm';
 
 import { MembershipRegister } from './entities/membership-register.entity';
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
@@ -18,7 +22,292 @@ export class MembershipRegisterService {
   constructor(
     @InjectRepository(MembershipRegister)
     private readonly membershipRepository: Repository<MembershipRegister>,
+
+    private readonly dataSource: DataSource,
   ) {}
+
+  // =========================================================
+  // GENERATE AVS ID
+  //
+  // Format:
+  //
+  // AVS + State(2) + District(2) + Mandal(2) + Sangham(3)
+  //
+  // Example:
+  // AVS010101001
+  //
+  // State      = 01 Telangana
+  // District   = 01
+  // Mandal     = 01
+  // Sangham    = 001
+  // =========================================================
+
+  private async generateAvsId(
+    district: string,
+    mandal: string,
+    sangham: string,
+  ): Promise<string> {
+    const districtName = district.trim();
+    const mandalName = mandal.trim();
+    const sanghamName = sangham.trim();
+
+    if (!districtName) {
+      throw new BadRequestException(
+        'District is required to generate AVS ID.',
+      );
+    }
+
+    if (!mandalName) {
+      throw new BadRequestException(
+        'Mandal is required to generate AVS ID.',
+      );
+    }
+
+    if (!sanghamName) {
+      throw new BadRequestException(
+        'Sangham is required to generate AVS ID.',
+      );
+    }
+
+    // =======================================================
+    // STATE CODE
+    //
+    // Telangana = 01
+    // =======================================================
+
+    const stateCode = '01';
+
+    // =======================================================
+    // GET ALL DISTRICTS
+    //
+    // Alphabetical order
+    // =======================================================
+
+    const districts = await this.dataSource.query(`
+      SELECT
+        id,
+        name
+      FROM locations
+      WHERE type = 'district'
+      ORDER BY LOWER(TRIM(name)) ASC
+    `);
+
+    if (!districts || districts.length === 0) {
+      throw new BadRequestException(
+        'District master data is not available.',
+      );
+    }
+
+    // =======================================================
+    // FIND DISTRICT
+    // =======================================================
+
+    const districtIndex = districts.findIndex(
+      (item: any) =>
+        String(item.name)
+          .trim()
+          .toLowerCase() ===
+        districtName.toLowerCase(),
+    );
+
+    if (districtIndex === -1) {
+      throw new BadRequestException(
+        `District "${districtName}" was not found in locations.`,
+      );
+    }
+
+    const districtRow = districts[districtIndex];
+
+    // Alphabetical position
+    const districtCode = String(
+      districtIndex + 1,
+    ).padStart(2, '0');
+
+    // =======================================================
+    // GET MANDALS UNDER THIS DISTRICT
+    //
+    // parent_id = district.id
+    //
+    // Alphabetical order
+    // =======================================================
+
+    const mandals = await this.dataSource.query(
+      `
+        SELECT
+          id,
+          name
+        FROM locations
+        WHERE type = 'mandal'
+          AND parent_id = ?
+        ORDER BY LOWER(TRIM(name)) ASC
+      `,
+      [districtRow.id],
+    );
+
+    if (!mandals || mandals.length === 0) {
+      throw new BadRequestException(
+        `No mandals found for district "${districtName}".`,
+      );
+    }
+
+    // =======================================================
+    // FIND MANDAL
+    // =======================================================
+
+    const mandalIndex = mandals.findIndex(
+      (item: any) =>
+        String(item.name)
+          .trim()
+          .toLowerCase() ===
+        mandalName.toLowerCase(),
+    );
+
+    if (mandalIndex === -1) {
+      throw new BadRequestException(
+        `Mandal "${mandalName}" was not found under district "${districtName}".`,
+      );
+    }
+
+    // Alphabetical position
+    const mandalCode = String(
+      mandalIndex + 1,
+    ).padStart(2, '0');
+
+    // =======================================================
+    // CHECK WHETHER THIS SANGHAM ALREADY HAS AN AVS ID
+    //
+    // Same District + Mandal + Sangham
+    // =======================================================
+
+    const existingSanghamMember =
+      await this.membershipRepository
+        .createQueryBuilder('member')
+        .where(
+          'LOWER(TRIM(member.district)) = LOWER(TRIM(:district))',
+          {
+            district: districtName,
+          },
+        )
+        .andWhere(
+          'LOWER(TRIM(member.mandal)) = LOWER(TRIM(:mandal))',
+          {
+            mandal: mandalName,
+          },
+        )
+        .andWhere(
+          'LOWER(TRIM(member.sangham)) = LOWER(TRIM(:sangham))',
+          {
+            sangham: sanghamName,
+          },
+        )
+        .andWhere('member.avs_id IS NOT NULL')
+        .orderBy('member.id', 'ASC')
+        .getOne();
+
+    // =======================================================
+    // EXISTING SANGHAM
+    //
+    // Re-use its existing Sangham code
+    // =======================================================
+
+    if (
+      existingSanghamMember?.avs_id
+    ) {
+      return existingSanghamMember.avs_id;
+    }
+
+    // =======================================================
+    // NEW SANGHAM
+    //
+    // Find highest Sangham code already used
+    // for this District + Mandal.
+    //
+    // AVS:
+    //
+    // AVS 01 DD MM SSS
+    //          ↑  ↑
+    //       district
+    //          mandal
+    //
+    // Sangham starts at character 10.
+    // =======================================================
+
+    const maxResult =
+      await this.dataSource.query(
+        `
+          SELECT
+            MAX(
+              CAST(
+                SUBSTRING(avs_id, 10, 3)
+                AS UNSIGNED
+              )
+            ) AS max_code
+          FROM members
+          WHERE LOWER(TRIM(district)) =
+                LOWER(TRIM(?))
+            AND LOWER(TRIM(mandal)) =
+                LOWER(TRIM(?))
+            AND avs_id IS NOT NULL
+            AND avs_id LIKE 'AVS%'
+        `,
+        [
+          districtName,
+          mandalName,
+        ],
+      );
+
+    const maxCode = Number(
+      maxResult?.[0]?.max_code || 0,
+    );
+
+    const sanghamNumber =
+      maxCode + 1;
+
+    // =======================================================
+    // MAX 999 SANGHAMS
+    // =======================================================
+
+    if (sanghamNumber > 999) {
+      throw new BadRequestException(
+        `Sangham AVS code limit reached for ${districtName} - ${mandalName}.`,
+      );
+    }
+
+    const sanghamCode =
+      String(sanghamNumber).padStart(3, '0');
+
+    // =======================================================
+    // FINAL AVS ID
+    //
+    // Example:
+    //
+    // AVS + 01 + 01 + 01 + 001
+    //
+    // AVS010101001
+    // =======================================================
+
+    const avsId =
+      `AVS${stateCode}${districtCode}${mandalCode}${sanghamCode}`;
+
+    // =======================================================
+    // SAFETY CHECK
+    // =======================================================
+
+    const duplicateAvs =
+      await this.membershipRepository.findOne({
+        where: {
+          avs_id: avsId,
+        },
+      });
+
+    if (duplicateAvs) {
+      throw new ConflictException(
+        `AVS ID ${avsId} already exists. Please try registration again.`,
+      );
+    }
+
+    return avsId;
+  }
 
   // =========================================================
   // CREATE MEMBERSHIP
@@ -33,7 +322,8 @@ export class MembershipRegisterService {
     // DUPLICATE EMAIL CHECK
     // =======================================================
 
-    const email = dto.email?.trim().toLowerCase();
+    const email =
+      dto.email?.trim().toLowerCase();
 
     if (email) {
       const existingEmail =
@@ -44,7 +334,8 @@ export class MembershipRegisterService {
       if (existingEmail) {
         throw new ConflictException(
           `This email address is already registered. Member ID: ${
-            existingEmail.member_id || existingEmail.id
+            existingEmail.member_id ||
+            existingEmail.id
           }`,
         );
       }
@@ -54,7 +345,8 @@ export class MembershipRegisterService {
     // DUPLICATE MOBILE CHECK
     // =======================================================
 
-    const mobile = dto.mobile?.trim();
+    const mobile =
+      dto.mobile?.trim();
 
     if (mobile) {
       const existingMobile =
@@ -65,7 +357,8 @@ export class MembershipRegisterService {
       if (existingMobile) {
         throw new ConflictException(
           `This mobile number is already registered. Member ID: ${
-            existingMobile.member_id || existingMobile.id
+            existingMobile.member_id ||
+            existingMobile.id
           }`,
         );
       }
@@ -75,7 +368,8 @@ export class MembershipRegisterService {
     // CREATE MEMBER
     // =======================================================
 
-    const member = new MembershipRegister();
+    const member =
+      new MembershipRegister();
 
     // =======================================================
     // BASIC DETAILS
@@ -127,8 +421,6 @@ export class MembershipRegisterService {
     member.occupation =
       dto.occupation?.trim() || null;
 
-    
-
     member.gender =
       dto.gender?.trim();
 
@@ -147,14 +439,16 @@ export class MembershipRegisterService {
     // =======================================================
 
     member.is_existing_mahashaba_member =
-      dto.is_existing_mahashaba_member?.trim() || null;
+      dto.is_existing_mahashaba_member?.trim() ||
+      null;
 
     // =======================================================
     // EXISTING SANGAM MEMBER
     // =======================================================
 
     member.is_existing_sangam_member =
-      dto.is_existing_sangam_member?.trim() || null;
+      dto.is_existing_sangam_member?.trim() ||
+      null;
 
     // =======================================================
     // TEMP MEMBER ID
@@ -167,8 +461,7 @@ export class MembershipRegisterService {
     // DEFAULT ROLE
     // =======================================================
 
-    member.role =
-      'user';
+    member.role = 'user';
 
     // =======================================================
     // LOCATION DETAILS
@@ -182,6 +475,35 @@ export class MembershipRegisterService {
 
     member.sangham =
       dto.sangham?.trim() || null;
+
+    // =======================================================
+    // AVS ID
+    //
+    // IMPORTANT:
+    // AVS ID is generated BEFORE first database save.
+    //
+    // Every new member gets an AVS ID during registration.
+    // =======================================================
+
+    if (
+      !member.district ||
+      !member.mandal ||
+      !member.sangham
+    ) {
+      throw new BadRequestException(
+        'District, Mandal and Sangham are required to generate AVS ID.',
+      );
+    }
+
+    const avsId =
+      await this.generateAvsId(
+        member.district,
+        member.mandal,
+        member.sangham,
+      );
+
+    member.avs_id =
+      avsId;
 
     // =======================================================
     // PHOTO
@@ -199,11 +521,6 @@ export class MembershipRegisterService {
 
     // =======================================================
     // NO PAYMENT DATA HERE
-    //
-    // New membership client does NOT submit payment details.
-    //
-    // Payment columns can remain in the database/entity
-    // for old records or admin-side management.
     // =======================================================
 
     member.mahashaba_payment_status =
@@ -252,7 +569,8 @@ export class MembershipRegisterService {
     // FIRST SAVE
     // =======================================================
 
-    let savedMember: MembershipRegister;
+    let savedMember:
+      MembershipRegister;
 
     try {
       savedMember =
@@ -266,7 +584,8 @@ export class MembershipRegisterService {
       );
 
       if (
-        error?.code === 'ER_DUP_ENTRY'
+        error?.code ===
+        'ER_DUP_ENTRY'
       ) {
         const message =
           String(
@@ -291,6 +610,14 @@ export class MembershipRegisterService {
           );
         }
 
+        if (
+          message.includes('avs_id')
+        ) {
+          throw new ConflictException(
+            'This AVS ID already exists. Please try registration again.',
+          );
+        }
+
         throw new ConflictException(
           'This member already exists.',
         );
@@ -304,10 +631,14 @@ export class MembershipRegisterService {
     // =======================================================
 
     const memberId =
-      `TVM${String(savedMember.id).padStart(5, '0')}`;
+      `TVM${String(
+        savedMember.id,
+      ).padStart(5, '0')}`;
 
     // =======================================================
     // UPDATE MEMBER ID
+    //
+    // AVS ID is already saved.
     // =======================================================
 
     savedMember.member_id =
@@ -327,6 +658,10 @@ export class MembershipRegisterService {
       ...safeMember
     } = updatedMember;
 
+    // =======================================================
+    // REGISTRATION SUCCESS
+    // =======================================================
+
     return {
       success: true,
 
@@ -335,6 +670,9 @@ export class MembershipRegisterService {
 
       member_id:
         updatedMember.member_id,
+
+      avs_id:
+        updatedMember.avs_id,
 
       id:
         updatedMember.id,
@@ -360,66 +698,84 @@ export class MembershipRegisterService {
         },
       });
 
-    return members.filter((member) => {
-      // =====================================================
-      // EXECUTIVE BODY
-      // =====================================================
+    return members.filter(
+      (member) => {
+        const body =
+          String(
+            member.executive_body ?? '',
+          )
+            .trim()
+            .toLowerCase()
+            .replace(
+              /[_-]+/g,
+              ' ',
+            )
+            .replace(
+              /\s+/g,
+              ' ',
+            );
 
-      const body =
-        String(
-          member.executive_body ?? '',
-        )
-          .trim()
-          .toLowerCase()
-          .replace(/[_-]+/g, ' ')
-          .replace(/\s+/g, ' ');
+        const isBody =
+          body === 'state' ||
+          body === 'state body' ||
+          body.startsWith(
+            'state ',
+          ) ||
 
-      const isBody =
-        body === 'state' ||
-        body === 'state body' ||
-        body.startsWith('state ') ||
+          body === 'district' ||
+          body === 'district body' ||
+          body.startsWith(
+            'district ',
+          ) ||
 
-        body === 'district' ||
-        body === 'district body' ||
-        body.startsWith('district ') ||
+          body === 'mandal' ||
+          body === 'mandal body' ||
+          body.startsWith(
+            'mandal ',
+          ) ||
 
-        body === 'mandal' ||
-        body === 'mandal body' ||
-        body.startsWith('mandal ') ||
+          body === 'sangam' ||
+          body === 'sangam body' ||
+          body.startsWith(
+            'sangam ',
+          );
 
-        body === 'sangam' ||
-        body === 'sangam body' ||
-        body.startsWith('sangam ');
+        if (!isBody) {
+          return false;
+        }
 
-      if (!isBody) {
-        return false;
-      }
+        const designation =
+          String(
+            member.designation ?? '',
+          )
+            .trim()
+            .toLowerCase()
+            .replace(
+              /[_-]+/g,
+              ' ',
+            )
+            .replace(
+              /\s+/g,
+              ' ',
+            );
 
-      // =====================================================
-      // DESIGNATION
-      // =====================================================
+        const isDesignation =
+          designation ===
+            'president' ||
+          designation ===
+            'vice president' ||
+          designation ===
+            'general secretary' ||
+          designation ===
+            'joint secretary';
 
-      const designation =
-        String(
-          member.designation ?? '',
-        )
-          .trim()
-          .toLowerCase()
-          .replace(/[_-]+/g, ' ')
-          .replace(/\s+/g, ' ');
+        if (!isDesignation) {
+          return false;
+        }
 
-      const isDesignation =
-        designation === 'president' ||
-        designation === 'vice president' ||
-        designation === 'general secretary' ||
-        designation === 'joint secretary';
-
-      if (!isDesignation) {
-        return false;
-      }
-
-      return true;
-    });
+        return true;
+      },
+    );
   }
 
   // =========================================================
@@ -463,10 +819,13 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      normalizedRole === 'super_admin' ||
+      normalizedRole ===
+        'super_admin' ||
       normalizedRole === 'admin' ||
-      normalizedRole === 'state_admin' ||
-      normalizedRole === 'stateadmin'
+      normalizedRole ===
+        'state_admin' ||
+      normalizedRole ===
+        'stateadmin'
     ) {
       const members =
         await this.membershipRepository.find({
@@ -488,8 +847,10 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      normalizedRole === 'sangham_admin' ||
-      normalizedRole === 'sangam_admin'
+      normalizedRole ===
+        'sangham_admin' ||
+      normalizedRole ===
+        'sangam_admin'
     ) {
       if (!sangham?.trim()) {
         console.log(
@@ -502,7 +863,8 @@ export class MembershipRegisterService {
       const members =
         await this.membershipRepository.find({
           where: {
-            sangham: sangham.trim(),
+            sangham:
+              sangham.trim(),
           },
           order: {
             created_at: 'DESC',
@@ -522,8 +884,10 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      normalizedRole === 'district_admin' ||
-      normalizedRole === 'districtadmin'
+      normalizedRole ===
+        'district_admin' ||
+      normalizedRole ===
+        'districtadmin'
     ) {
       const members =
         await this.membershipRepository.find({
@@ -545,8 +909,10 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      normalizedRole === 'mandal_admin' ||
-      normalizedRole === 'mandaladmin'
+      normalizedRole ===
+        'mandal_admin' ||
+      normalizedRole ===
+        'mandaladmin'
     ) {
       const members =
         await this.membershipRepository.find({
@@ -613,31 +979,38 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.full_name !== undefined
+      dto.full_name !==
+      undefined
     ) {
       member.full_name =
         dto.full_name.trim();
     }
 
     if (
-      dto.surname !== undefined
+      dto.surname !==
+      undefined
     ) {
       member.surname =
-        dto.surname.trim() || null;
+        dto.surname.trim() ||
+        null;
     }
 
     if (
-      dto.father_name !== undefined
+      dto.father_name !==
+      undefined
     ) {
       member.father_name =
-        dto.father_name.trim() || null;
+        dto.father_name.trim() ||
+        null;
     }
 
     if (
-      dto.location !== undefined
+      dto.location !==
+      undefined
     ) {
       member.location =
-        dto.location.trim() || null;
+        dto.location.trim() ||
+        null;
     }
 
     // =======================================================
@@ -645,7 +1018,8 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.mobile !== undefined
+      dto.mobile !==
+      undefined
     ) {
       member.mobile =
         dto.mobile.trim();
@@ -656,10 +1030,13 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.email !== undefined
+      dto.email !==
+      undefined
     ) {
       member.email =
-        dto.email.trim().toLowerCase();
+        dto.email
+          .trim()
+          .toLowerCase();
     }
 
     // =======================================================
@@ -667,19 +1044,21 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.occupation !== undefined
+      dto.occupation !==
+      undefined
     ) {
       member.occupation =
-        dto.occupation.trim() || null;
+        dto.occupation.trim() ||
+        null;
     }
 
-   
     // =======================================================
     // GENDER
     // =======================================================
 
     if (
-      dto.gender !== undefined
+      dto.gender !==
+      undefined
     ) {
       member.gender =
         dto.gender.trim();
@@ -690,7 +1069,8 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.date_of_birth !== undefined
+      dto.date_of_birth !==
+      undefined
     ) {
       const dob =
         String(
@@ -708,10 +1088,12 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.gotram !== undefined
+      dto.gotram !==
+      undefined
     ) {
       member.gotram =
-        dto.gotram.trim() || null;
+        dto.gotram.trim() ||
+        null;
     }
 
     // =======================================================
@@ -745,7 +1127,8 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.role !== undefined
+      dto.role !==
+      undefined
     ) {
       member.role =
         dto.role.trim();
@@ -756,7 +1139,8 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.status !== undefined
+      dto.status !==
+      undefined
     ) {
       member.status =
         dto.status.trim();
@@ -767,7 +1151,8 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.password !== undefined &&
+      dto.password !==
+        undefined &&
       dto.password.trim() !== ''
     ) {
       member.password =
@@ -782,7 +1167,8 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.executive_body !== undefined
+      dto.executive_body !==
+      undefined
     ) {
       const executiveBody =
         dto.executive_body.trim();
@@ -794,7 +1180,8 @@ export class MembershipRegisterService {
     }
 
     if (
-      dto.designation !== undefined
+      dto.designation !==
+      undefined
     ) {
       const designation =
         dto.designation.trim();
@@ -810,25 +1197,41 @@ export class MembershipRegisterService {
     // =======================================================
 
     if (
-      dto.district !== undefined
+      dto.district !==
+      undefined
     ) {
       member.district =
-        dto.district.trim() || null;
+        dto.district.trim() ||
+        null;
     }
 
     if (
-      dto.mandal !== undefined
+      dto.mandal !==
+      undefined
     ) {
       member.mandal =
-        dto.mandal.trim() || null;
+        dto.mandal.trim() ||
+        null;
     }
 
     if (
-      dto.sangham !== undefined
+      dto.sangham !==
+      undefined
     ) {
       member.sangham =
-        dto.sangham.trim() || null;
+        dto.sangham.trim() ||
+        null;
     }
+
+    // =======================================================
+    // AVS ID
+    //
+    // IMPORTANT:
+    // Existing AVS ID is NOT changed automatically during
+    // normal member update.
+    //
+    // This keeps the original AVS ID permanent.
+    // =======================================================
 
     // =======================================================
     // PHOTO
@@ -840,12 +1243,7 @@ export class MembershipRegisterService {
     }
 
     // =======================================================
-    // PAYMENT
-    //
-    // Payment is NOT handled by the new client registration.
-    //
-    // Existing admin/payment update functionality is kept
-    // below so old records are not affected.
+    // MAHASHABA PAYMENT
     // =======================================================
 
     if (
@@ -853,7 +1251,8 @@ export class MembershipRegisterService {
       undefined
     ) {
       member.mahashaba_payment_status =
-        dto.mahashaba_payment_status.trim() || null;
+        dto.mahashaba_payment_status.trim() ||
+        null;
     }
 
     if (
@@ -913,7 +1312,8 @@ export class MembershipRegisterService {
       undefined
     ) {
       member.sangam_payment_status =
-        dto.sangam_payment_status.trim() || null;
+        dto.sangam_payment_status.trim() ||
+        null;
     }
 
     if (
@@ -999,7 +1399,8 @@ export class MembershipRegisterService {
       );
 
       if (
-        error?.code === 'ER_DUP_ENTRY'
+        error?.code ===
+        'ER_DUP_ENTRY'
       ) {
         const message =
           String(
@@ -1021,6 +1422,14 @@ export class MembershipRegisterService {
         ) {
           throw new ConflictException(
             'This mobile number is already registered.',
+          );
+        }
+
+        if (
+          message.includes('avs_id')
+        ) {
+          throw new ConflictException(
+            'This AVS ID already exists.',
           );
         }
 
