@@ -11,4 +11,4 @@ import { EmailService } from './email.service';
     EmailService,
   ],
 })
-export class EmailModule {}
+export class EmailModule {} 
