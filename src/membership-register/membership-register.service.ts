@@ -31,181 +31,68 @@ export class MembershipRegisterService {
   //
   // FORMAT:
   //
-  // AVS + STATE(2) + DISTRICT(2) + MANDAL(2) + SERIAL(3)
-  //
-  // State Body    -> AVS010000001
-  // District Body -> AVS01DD00001
-  // Mandal Body   -> AVS01DDMM001
-  // Sangham Body  -> AVS01DDMM002
-  //
-  // IMPORTANT:
-  // locations table:
-  // id
-  // name
-  // type = district / mandal / sangham
-  // parent_id
+  // AVS + STATE(2) + DISTRICT(2) + MANDAL(3) + SERIAL(3)
   //
   // =========================================================
 
- // =========================================================
-// GENERATE AVS ID
-//
-// FORMAT:
-//
-// AVS + STATE(2) + DISTRICT(2) + MANDAL(3) + SERIAL(3)
-//
-// State Body:
-// AVS010000001
-//
-// District Body:
-// AVS01DD00001
-//
-// Mandal Body:
-// AVS01DDMMM001
-//
-// Sangham Body:
-// AVS01DDMMM001
-//
-// IMPORTANT:
-// locations.id:
-//   district -> used as 2-digit district code
-//   mandal   -> used as 3-digit mandal code
-//
-// =========================================================
+  private async generateAvsId(
+    districtName: string,
+    mandalName: string,
+    executiveBody: string,
+  ): Promise<string> {
+    const body =
+      (executiveBody || '').trim();
 
-private async generateAvsId(
-  districtName: string,
-  mandalName: string,
-  executiveBody: string,
-): Promise<string> {
-  const body = (executiveBody || '').trim();
+    const district =
+      (districtName || '').trim();
 
-  const district = (districtName || '').trim();
-  const mandal = (mandalName || '').trim();
+    const mandal =
+      (mandalName || '').trim();
 
-  // Telangana
-  const stateCode = '01';
+    // =========================================================
+    // TELANGANA STATE CODE
+    // =========================================================
 
-  // =========================================================
-  // DEFAULT CODES
-  // =========================================================
+    const stateCode = '01';
 
-  let districtCode = '00';
+    // =========================================================
+    // DEFAULT CODES
+    // =========================================================
 
-  // IMPORTANT:
-  // Mandal is now 3 digits
-  let mandalCode = '000';
+    let districtCode = '00';
 
-  // =========================================================
-  // STATE BODY
-  // =========================================================
+    let mandalCode = '000';
 
-  if (body === 'State Body') {
-    districtCode = '00';
-    mandalCode = '000';
-  }
+    // =========================================================
+    // STATE BODY
+    // =========================================================
 
-  // =========================================================
-  // DISTRICT / MANDAL / SANGHAM BODY
-  // =========================================================
+    if (body === 'State Body') {
+      districtCode = '00';
 
-  else {
-    // =======================================================
-    // DISTRICT REQUIRED
-    // =======================================================
-
-    if (!district) {
-      throw new BadRequestException(
-        'District is required.',
-      );
-    }
-
-    // =======================================================
-    // FIND DISTRICT
-    // =======================================================
-
-    const districtRows =
-      await this.dataSource.query(
-        `
-        SELECT
-          id,
-          name,
-          type,
-          parent_id
-        FROM locations
-        WHERE type = 'district'
-          AND LOWER(TRIM(name)) =
-              LOWER(TRIM(?))
-        LIMIT 1
-        `,
-        [district],
-      );
-
-    if (
-      !districtRows ||
-      districtRows.length === 0
-    ) {
-      throw new BadRequestException(
-        `District not found in locations: ${district}`,
-      );
-    }
-
-    const districtId =
-      Number(districtRows[0].id);
-
-    // =======================================================
-    // DISTRICT CODE = 2 DIGITS
-    // =======================================================
-
-    if (
-      !Number.isInteger(districtId) ||
-      districtId < 0 ||
-      districtId > 99
-    ) {
-      throw new BadRequestException(
-        `District location ID ${districtId} cannot be converted to a 2-digit AVS code.`,
-      );
-    }
-
-    districtCode =
-      String(districtId).padStart(2, '0');
-
-    // =======================================================
-    // DISTRICT BODY
-    // =======================================================
-
-    if (body === 'District Body') {
       mandalCode = '000';
     }
 
-    // =======================================================
-    // MANDAL / SANGHAM BODY
-    // =======================================================
+    // =========================================================
+    // DISTRICT / MANDAL / SANGHAM BODY
+    // =========================================================
 
-    else if (
-      body === 'Mandal Body' ||
-      body === 'Sangham Body'
-    ) {
-      // =====================================================
-      // MANDAL REQUIRED
-      // =====================================================
+    else {
+      // =======================================================
+      // DISTRICT REQUIRED
+      // =======================================================
 
-      if (!mandal) {
+      if (!district) {
         throw new BadRequestException(
-          'Mandal is required.',
+          'District is required.',
         );
       }
 
-      // =====================================================
-      // FIND MANDAL
-      //
-      // parent_id = district id
-      //
-      // This is important because the same mandal
-      // name can exist under different districts.
-      // =====================================================
+      // =======================================================
+      // FIND DISTRICT
+      // =======================================================
 
-      const mandalRows =
+      const districtRows =
         await this.dataSource.query(
           `
           SELECT
@@ -214,242 +101,325 @@ private async generateAvsId(
             type,
             parent_id
           FROM locations
-          WHERE type = 'mandal'
-            AND parent_id = ?
+          WHERE type = 'district'
             AND LOWER(TRIM(name)) =
                 LOWER(TRIM(?))
           LIMIT 1
           `,
-          [
-            districtId,
-            mandal,
-          ],
+          [district],
         );
 
       if (
-        !mandalRows ||
-        mandalRows.length === 0
+        !districtRows ||
+        districtRows.length === 0
       ) {
         throw new BadRequestException(
-          `Mandal "${mandal}" not found under district "${district}".`,
+          `District not found in locations: ${district}`,
         );
       }
 
-      const mandalId =
-        Number(mandalRows[0].id);
+      const districtId =
+        Number(districtRows[0].id);
 
-      // =====================================================
-      // MANDAL CODE = 3 DIGITS
-      // =====================================================
+      // =======================================================
+      // DISTRICT CODE = 2 DIGITS
+      // =======================================================
 
       if (
-        !Number.isInteger(mandalId) ||
-        mandalId < 0 ||
-        mandalId > 999
+        !Number.isInteger(districtId) ||
+        districtId < 0 ||
+        districtId > 99
       ) {
         throw new BadRequestException(
-          `Mandal location ID ${mandalId} cannot be converted to a 3-digit AVS code.`,
+          `District location ID ${districtId} cannot be converted to a 2-digit AVS code.`,
         );
       }
 
-      mandalCode =
-        String(mandalId).padStart(3, '0');
+      districtCode =
+        String(districtId).padStart(
+          2,
+          '0',
+        );
+
+      // =======================================================
+      // DISTRICT BODY
+      // =======================================================
+
+      if (body === 'District Body') {
+        mandalCode = '000';
+      }
+
+      // =======================================================
+      // MANDAL / SANGHAM BODY
+      // =======================================================
+
+      else if (
+        body === 'Mandal Body' ||
+        body === 'Sangham Body'
+      ) {
+        // =====================================================
+        // MANDAL REQUIRED
+        // =====================================================
+
+        if (!mandal) {
+          throw new BadRequestException(
+            'Mandal is required.',
+          );
+        }
+
+        // =====================================================
+        // FIND MANDAL
+        // =====================================================
+
+        const mandalRows =
+          await this.dataSource.query(
+            `
+            SELECT
+              id,
+              name,
+              type,
+              parent_id
+            FROM locations
+            WHERE type = 'mandal'
+              AND parent_id = ?
+              AND LOWER(TRIM(name)) =
+                  LOWER(TRIM(?))
+            LIMIT 1
+            `,
+            [
+              districtId,
+              mandal,
+            ],
+          );
+
+        if (
+          !mandalRows ||
+          mandalRows.length === 0
+        ) {
+          throw new BadRequestException(
+            `Mandal "${mandal}" not found under district "${district}".`,
+          );
+        }
+
+        const mandalId =
+          Number(mandalRows[0].id);
+
+        // =====================================================
+        // MANDAL CODE = 3 DIGITS
+        // =====================================================
+
+        if (
+          !Number.isInteger(mandalId) ||
+          mandalId < 0 ||
+          mandalId > 999
+        ) {
+          throw new BadRequestException(
+            `Mandal location ID ${mandalId} cannot be converted to a 3-digit AVS code.`,
+          );
+        }
+
+        mandalCode =
+          String(mandalId).padStart(
+            3,
+            '0',
+          );
+      }
+
+      // =====================================================
+      // INVALID BODY
+      // =====================================================
+
+      else {
+        throw new BadRequestException(
+          `Invalid Executive Body: ${body}`,
+        );
+      }
     }
 
-    // =======================================================
-    // INVALID BODY
-    // =======================================================
+    // =========================================================
+    // AVS PREFIX
+    // =========================================================
 
-    else {
+    const prefix =
+      `AVS${stateCode}${districtCode}${mandalCode}`;
+
+    console.log(
+      '=========================================',
+    );
+
+    console.log(
+      'GENERATING AVS ID',
+    );
+
+    console.log(
+      'EXECUTIVE BODY:',
+      body,
+    );
+
+    console.log(
+      'DISTRICT:',
+      district,
+    );
+
+    console.log(
+      'MANDAL:',
+      mandal,
+    );
+
+    console.log(
+      'DISTRICT CODE:',
+      districtCode,
+    );
+
+    console.log(
+      'MANDAL CODE:',
+      mandalCode,
+    );
+
+    console.log(
+      'AVS PREFIX:',
+      prefix,
+    );
+
+    console.log(
+      '=========================================',
+    );
+
+    // =========================================================
+    // GET EXISTING AVS IDS
+    // =========================================================
+
+    const memberRows =
+      await this.dataSource.query(
+        `
+        SELECT
+          id,
+          avs_id
+        FROM members
+        WHERE avs_id IS NOT NULL
+          AND avs_id LIKE ?
+        `,
+        [`${prefix}%`],
+      );
+
+    // =========================================================
+    // FIND MAX SERIAL
+    // =========================================================
+
+    let maxSerial = 0;
+
+    for (
+      const row of memberRows || []
+    ) {
+      const existingAvsId =
+        String(row.avs_id || '');
+
+      if (
+        !existingAvsId.startsWith(prefix)
+      ) {
+        continue;
+      }
+
+      const serialPart =
+        existingAvsId.slice(prefix.length);
+
+      // Serial must be exactly 3 digits
+
+      if (
+        !/^\d{3}$/.test(serialPart)
+      ) {
+        continue;
+      }
+
+      const serial =
+        Number(serialPart);
+
+      if (
+        serial > maxSerial
+      ) {
+        maxSerial = serial;
+      }
+    }
+
+    // =========================================================
+    // NEXT SERIAL
+    // =========================================================
+
+    const nextSerial =
+      maxSerial + 1;
+
+    if (
+      nextSerial > 999
+    ) {
       throw new BadRequestException(
-        `Invalid Executive Body: ${body}`,
+        `AVS ID serial limit reached for ${
+          district || 'State'
+        } - ${
+          mandal || 'All Mandals'
+        }.`,
       );
     }
-  }
 
-  // =========================================================
-  // AVS PREFIX
-  //
-  // State    = 01
-  // District = 2 digits
-  // Mandal   = 3 digits
-  //
-  // Example:
-  //
-  // AVS + 01 + 15 + 636
-  //
-  // AVS0115636
-  //
-  // =========================================================
+    const serialCode =
+      String(nextSerial).padStart(
+        3,
+        '0',
+      );
 
-  const prefix =
-    `AVS${stateCode}${districtCode}${mandalCode}`;
+    // =========================================================
+    // FINAL AVS ID
+    // =========================================================
 
-  console.log(
-    '=========================================',
-  );
-
-  console.log(
-    'GENERATING AVS ID',
-  );
-
-  console.log(
-    'EXECUTIVE BODY:',
-    body,
-  );
-
-  console.log(
-    'DISTRICT:',
-    district,
-  );
-
-  console.log(
-    'MANDAL:',
-    mandal,
-  );
-
-  console.log(
-    'DISTRICT CODE:',
-    districtCode,
-  );
-
-  console.log(
-    'MANDAL CODE:',
-    mandalCode,
-  );
-
-  console.log(
-    'AVS PREFIX:',
-    prefix,
-  );
-
-  console.log(
-    '=========================================',
-  );
-
-  // =========================================================
-  // GET EXISTING AVS IDS
-  // =========================================================
-
-  const memberRows =
-    await this.dataSource.query(
-      `
-      SELECT
-        id,
-        avs_id
-      FROM members
-      WHERE avs_id IS NOT NULL
-        AND avs_id LIKE ?
-      `,
-      [`${prefix}%`],
-    );
-
-  // =========================================================
-  // FIND MAX SERIAL
-  // =========================================================
-
-  let maxSerial = 0;
-
-  for (const row of memberRows || []) {
     const avsId =
-      String(row.avs_id || '');
+      `${prefix}${serialCode}`;
+
+    // =========================================================
+    // FINAL DUPLICATE CHECK
+    // =========================================================
+
+    const duplicateAvs =
+      await this.dataSource.query(
+        `
+        SELECT id
+        FROM members
+        WHERE avs_id = ?
+        LIMIT 1
+        `,
+        [avsId],
+      );
 
     if (
-      !avsId.startsWith(prefix)
+      duplicateAvs &&
+      duplicateAvs.length > 0
     ) {
-      continue;
+      throw new ConflictException(
+        `Generated AVS ID ${avsId} already exists. Please try registration again.`,
+      );
     }
 
-    const serialPart =
-      avsId.slice(prefix.length);
+    console.log(
+      'GENERATED AVS ID:',
+      avsId,
+    );
 
-    // Serial must be exactly 3 digits
-    if (
-      !/^\d{3}$/.test(serialPart)
-    ) {
-      continue;
-    }
-
-    const serial =
-      Number(serialPart);
-
-    if (serial > maxSerial) {
-      maxSerial = serial;
-    }
+    return avsId;
   }
 
-  // =========================================================
-  // NEXT SERIAL
-  // =========================================================
-
-  const nextSerial =
-    maxSerial + 1;
-
-  if (nextSerial > 999) {
-    throw new BadRequestException(
-      `AVS ID serial limit reached for ${
-        district || 'State'
-      } - ${
-        mandal || 'All Mandals'
-      }.`,
-    );
-  }
-
-  const serialCode =
-    String(nextSerial).padStart(
-      3,
-      '0',
-    );
-
-  // =========================================================
-  // FINAL AVS ID
-  // =========================================================
-
-  const avsId =
-    `${prefix}${serialCode}`;
-
-  // =========================================================
-  // FINAL DUPLICATE CHECK
-  // =========================================================
-
-  const duplicateAvs =
-    await this.dataSource.query(
-      `
-      SELECT id
-      FROM members
-      WHERE avs_id = ?
-      LIMIT 1
-      `,
-      [avsId],
-    );
-
-  if (
-    duplicateAvs &&
-    duplicateAvs.length > 0
-  ) {
-    throw new ConflictException(
-      `Generated AVS ID ${avsId} already exists. Please try registration again.`,
-    );
-  }
-
-  console.log(
-    'GENERATED AVS ID:',
-    avsId,
-  );
-
-  return avsId;
-}
   // =========================================================
   // CREATE MEMBERSHIP
+  //
+  // IMPORTANT:
+  // Membership registration DOES NOT send email.
+  //
   // =========================================================
 
   async create(
     dto: CreateMembershipRegisterDto,
     photoPath?: string,
   ) {
-    // ---------------------------------------------------------
+    // =========================================================
     // NORMALIZE VALUES
-    // ---------------------------------------------------------
+    // =========================================================
 
     const executiveBody =
       dto.executive_body?.trim() ||
@@ -467,18 +437,6 @@ private async generateAvsId(
     // =========================================================
     // BODY VALIDATION
     // =========================================================
-
-    // State Body
-    // District / Mandal / Sangham NOT required
-
-    // District Body
-    // District required
-
-    // Mandal Body
-    // District + Mandal required
-
-    // Sangham Body
-    // District + Mandal + Sangham required
 
     if (
       [
@@ -516,10 +474,16 @@ private async generateAvsId(
 
     // =========================================================
     // EMAIL CHECK
+    //
+    // Email is still stored and duplicate-checked.
+    // NO EMAIL IS SENT.
+    //
     // =========================================================
 
     const email =
-      dto.email?.trim().toLowerCase();
+      dto.email
+        ?.trim()
+        .toLowerCase();
 
     if (email) {
       const existingEmail =
@@ -743,7 +707,8 @@ private async generateAvsId(
     // SAVE MEMBER
     // =========================================================
 
-    let savedMember: MembershipRegister;
+    let savedMember:
+      MembershipRegister;
 
     try {
       savedMember =
@@ -819,6 +784,15 @@ private async generateAvsId(
       await this.membershipRepository.save(
         savedMember,
       );
+
+    // =========================================================
+    // NO MEMBERSHIP EMAIL
+    //
+    // IMPORTANT:
+    // Membership registration email has been disabled.
+    //
+    // Matrimony registration handles its own email.
+    // =========================================================
 
     // =========================================================
     // REMOVE PASSWORD
@@ -1133,6 +1107,10 @@ private async generateAvsId(
       );
     }
 
+    // =========================================================
+    // BASIC DETAILS
+    // =========================================================
+
     if (
       dto.full_name !== undefined
     ) {
@@ -1172,7 +1150,9 @@ private async generateAvsId(
       dto.email !== undefined
     ) {
       const email =
-        dto.email?.trim().toLowerCase();
+        dto.email
+          ?.trim()
+          .toLowerCase();
 
       if (email) {
         const existingEmail =

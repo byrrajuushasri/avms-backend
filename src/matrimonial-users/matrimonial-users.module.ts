@@ -3,8 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MatrimonialUsersController } from './matrimonial-users.controller';
 import { MatrimonialUsersService } from './matrimonial-users.service';
+
 import { MatrimonialUser } from './entities/matrimonial-user.entity';
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
+
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -12,6 +15,8 @@ import { MembershipRegister } from '../membership-register/entities/membership-r
       MatrimonialUser,
       MembershipRegister,
     ]),
+
+    EmailModule,
   ],
 
   controllers: [

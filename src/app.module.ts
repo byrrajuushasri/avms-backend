@@ -13,6 +13,8 @@ import { TemplesModule } from "./temples/temples.module";
 import { TempleEventsModule } from "./temple-events/temple-events.module";
 import { SatramsModule } from "./satrams/satrams.module";
 import { AuthModule } from "./auth/auth.module";
+import { MailModule } from './mail/mail.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { AuthModule } from "./auth/auth.module";
     TempleEventsModule,
     SatramsModule,
     AuthModule,
+    MailModule,
+    EmailModule,
   ],
 })
 export class AppModule {}
