@@ -59,7 +59,6 @@ export class MatrimonialUsersService {
         ? String(data.mobile).trim()
         : '';
 
-    // Email is not required for matrimonial verification
     const email =
       data?.email !== undefined &&
       data?.email !== null
@@ -78,7 +77,7 @@ export class MatrimonialUsersService {
     }
 
     // =======================================================
-    // FIND MEMBER BY MOBILE ONLY
+    // FIND MEMBER BY MOBILE
     // =======================================================
 
     const member =
@@ -173,6 +172,15 @@ export class MatrimonialUsersService {
 
           photo:
             member.photo,
+
+          status:
+            existingMatrimonial.status,
+
+          approved_at:
+            existingMatrimonial.approved_at,
+
+          expiry_date:
+            existingMatrimonial.expiry_date,
         },
       };
     }
@@ -367,6 +375,9 @@ export class MatrimonialUsersService {
 
           photo:
             member.photo,
+
+          status:
+            existingUser.status,
         },
       };
     }
@@ -619,8 +630,13 @@ export class MatrimonialUsersService {
     // STATUS
     // =======================================================
 
-    user.status =
-      data?.status || 'Pending';
+    // Always Pending during registration.
+    // Admin approval is required.
+    user.status = 'Pending';
+
+    // Approval dates remain NULL until Admin approves.
+    user.approved_at = null;
+    user.expiry_date = null;
 
 
     // =======================================================
@@ -687,87 +703,27 @@ export class MatrimonialUsersService {
 
 
       // =====================================================
-      // SEND MATRIMONY REGISTRATION EMAIL
+      // IMPORTANT
+      // =====================================================
+      //
+      // NO EMAIL IS SENT HERE.
+      //
+      // Email will be sent ONLY after Admin approval.
+      //
       // =====================================================
 
-      const registrationEmail =
-        savedMember?.email
-          ? String(
-              savedMember.email,
-            ).trim()
-          : '';
+      console.log(
+        'Matrimonial registered successfully.',
+      );
 
+      console.log(
+        'Status:',
+        savedUser.status,
+      );
 
-      if (registrationEmail) {
-
-        console.log(
-          '========== SENDING MATRIMONY EMAIL ==========',
-        );
-
-        console.log(
-          'Email:',
-          registrationEmail,
-        );
-
-        console.log(
-          'Member ID:',
-          savedUser.member_id,
-        );
-
-        console.log(
-          'Matrimony ID:',
-          savedUser.id,
-        );
-
-
-        try {
-
-          await this.emailService
-            .sendMatrimonyRegistrationEmail({
-
-              email:
-                registrationEmail,
-
-              name:
-                savedMember?.full_name ||
-                'Member',
-
-              memberId:
-                savedUser.member_id,
-
-              matrimonialId:
-                savedUser.id,
-            });
-
-
-          console.log(
-            'Matrimony registration email process completed.',
-          );
-
-        } catch (emailError) {
-
-          // Email failure should NOT
-          // cancel successful registration.
-
-          console.error(
-            '========== MATRIMONY EMAIL ERROR ==========',
-          );
-
-          console.error(
-            emailError,
-          );
-
-          console.error(
-            '===========================================',
-          );
-        }
-
-      } else {
-
-        console.log(
-          'Matrimony email not sent: member email is empty.',
-        );
-      }
+      console.log(
+        'Email will be sent only after Admin approval.',
+      );
 
 
       // =====================================================
@@ -779,7 +735,7 @@ export class MatrimonialUsersService {
         success: true,
 
         message:
-          'Matrimonial member added successfully',
+          'Matrimonial member added successfully. Waiting for Admin approval.',
 
         data: {
 
@@ -827,6 +783,12 @@ export class MatrimonialUsersService {
 
           status:
             savedUser.status,
+
+          approved_at:
+            savedUser.approved_at,
+
+          expiry_date:
+            savedUser.expiry_date,
         },
       };
 
@@ -844,6 +806,312 @@ export class MatrimonialUsersService {
 
       throw error;
     }
+  }
+
+
+  // =========================================================
+  // APPROVE MATRIMONIAL PROFILE
+  // =========================================================
+
+  async approve(id: number) {
+
+    console.log(
+      '========== APPROVE MATRIMONIAL PROFILE ==========',
+    );
+
+    console.log(
+      'Matrimonial ID:',
+      id,
+    );
+
+
+    // =======================================================
+    // FIND MATRIMONIAL USER
+    // =======================================================
+
+    const matrimonial =
+      await this.userRepository.findOne({
+
+        where: {
+          id,
+        },
+
+      });
+
+
+    if (!matrimonial) {
+
+      throw new NotFoundException(
+        'Matrimonial member not found',
+      );
+    }
+
+
+    // =======================================================
+    // ALREADY APPROVED
+    // =======================================================
+
+    if (
+      String(matrimonial.status).toLowerCase() ===
+      'approved'
+    ) {
+
+      return {
+
+        success: false,
+
+        alreadyApproved: true,
+
+        message:
+          'This matrimonial profile is already approved.',
+
+        data: {
+
+          id:
+            matrimonial.id,
+
+          member_id:
+            matrimonial.member_id,
+
+          status:
+            matrimonial.status,
+
+          approved_at:
+            matrimonial.approved_at,
+
+          expiry_date:
+            matrimonial.expiry_date,
+        },
+      };
+    }
+
+
+    // =======================================================
+    // FIND MEMBER
+    // =======================================================
+
+    const member =
+      await this.memberRepository.findOne({
+
+        where: {
+          member_id:
+            matrimonial.member_id,
+        },
+
+      });
+
+
+    if (!member) {
+
+      throw new NotFoundException(
+        'Membership record not found',
+      );
+    }
+
+
+    // =======================================================
+    // APPROVAL DATE
+    // =======================================================
+
+    const approvedAt =
+      new Date();
+
+
+    // =======================================================
+    // EXPIRY DATE = 99 DAYS
+    // =======================================================
+
+    const expiryDate =
+      new Date(approvedAt);
+
+
+    expiryDate.setDate(
+      expiryDate.getDate() + 99,
+    );
+
+
+    // =======================================================
+    // UPDATE STATUS + DATES
+    // =======================================================
+
+    matrimonial.status =
+      'Approved';
+
+    matrimonial.approved_at =
+      approvedAt;
+
+    matrimonial.expiry_date =
+      expiryDate;
+
+
+    // =======================================================
+    // SAVE APPROVAL
+    // =======================================================
+
+    const approvedUser =
+      await this.userRepository.save(
+        matrimonial,
+      );
+
+
+    console.log(
+      'Matrimonial profile approved:',
+      approvedUser.id,
+    );
+
+    console.log(
+      'Approved At:',
+      approvedAt,
+    );
+
+    console.log(
+      'Expiry Date:',
+      expiryDate,
+    );
+
+
+    // =======================================================
+    // SEND APPROVAL EMAIL
+    // =======================================================
+
+    const registrationEmail =
+      member?.email
+        ? String(member.email).trim()
+        : '';
+
+
+    let emailResult: any = {
+      success: false,
+      message: 'Member email is missing',
+    };
+
+
+    if (registrationEmail) {
+
+      console.log(
+        '========== SENDING APPROVAL EMAIL ==========',
+      );
+
+      console.log(
+        'Email:',
+        registrationEmail,
+      );
+
+      console.log(
+        'Member ID:',
+        approvedUser.member_id,
+      );
+
+      console.log(
+        'Matrimonial ID:',
+        approvedUser.id,
+      );
+
+
+      try {
+
+        emailResult =
+          await this.emailService
+            .sendMatrimonyRegistrationEmail({
+
+              email:
+                registrationEmail,
+
+              name:
+                member?.full_name ||
+                'Member',
+
+              memberId:
+                approvedUser.member_id,
+
+              matrimonialId:
+                approvedUser.id,
+
+              registrationDate:
+                approvedAt,
+
+              expiryDate:
+                expiryDate,
+            });
+
+
+        console.log(
+          'Approval email process completed.',
+        );
+
+      } catch (emailError) {
+
+        console.error(
+          '========== APPROVAL EMAIL ERROR ==========',
+        );
+
+        console.error(
+          emailError,
+        );
+
+        console.error(
+          '==========================================',
+        );
+
+        emailResult = {
+          success: false,
+          message:
+            'Profile approved, but email sending failed.',
+        };
+      }
+
+    } else {
+
+      console.log(
+        'Approval email not sent: member email is empty.',
+      );
+    }
+
+
+    // =======================================================
+    // RETURN APPROVAL RESPONSE
+    // =======================================================
+
+    return {
+
+      success: true,
+
+      alreadyApproved: false,
+
+      message:
+        emailResult?.success
+          ? 'Matrimonial profile approved and email sent successfully.'
+          : 'Matrimonial profile approved, but email was not sent.',
+
+      data: {
+
+        id:
+          approvedUser.id,
+
+        member_id:
+          approvedUser.member_id,
+
+        full_name:
+          member?.full_name || null,
+
+        email:
+          member?.email || null,
+
+        status:
+          approvedUser.status,
+
+        approved_at:
+          approvedUser.approved_at,
+
+        expiry_date:
+          approvedUser.expiry_date,
+
+        email_sent:
+          Boolean(
+            emailResult?.success,
+          ),
+      },
+    };
   }
 
 
@@ -1466,14 +1734,13 @@ export class MatrimonialUsersService {
     // =======================================================
     // STATUS
     // =======================================================
-
-    if (
-      data?.status !== undefined
-    ) {
-
-      matrimonial.status =
-        data.status;
-    }
+    //
+    // IMPORTANT:
+    // Status is NOT changed through generic update.
+    //
+    // Admin approval must use approve().
+    //
+    // =======================================================
 
 
     // =======================================================

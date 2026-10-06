@@ -202,7 +202,17 @@ mother_occupation: string | null;
     nullable: true,
   })
   preference_area: string | null;
+@Column({
+  type: 'datetime',
+  nullable: true,
+})
+approved_at: Date | null;
 
+@Column({
+  type: 'datetime',
+  nullable: true,
+})
+expiry_date: Date | null;
   @Column('tinyint', {
     default: 0,
   })
