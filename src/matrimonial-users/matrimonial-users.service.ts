@@ -47,47 +47,46 @@ export class MatrimonialUsersService {
   // CHECK MEMBER
   // =========================================================
 
+ 
   async checkMember(data: any) {
-
     console.log(
       '========== CHECK MEMBER BEFORE MATRIMONIAL ==========',
     );
 
-    const mobile =
-      data?.mobile !== undefined &&
-      data?.mobile !== null
+    // Normalize input: 7997587834, +917997587834,
+    // or 91-7997587834 will all become 7997587834.
+    const mobileInput =
+      data?.mobile !== undefined && data?.mobile !== null
         ? String(data.mobile).trim()
         : '';
 
-    const email =
-      data?.email !== undefined &&
-      data?.email !== null
-        ? String(data.email).trim().toLowerCase()
-        : '';
+    const normalizedMobile =
+      mobileInput.replace(/\D/g, '').slice(-10);
 
-    console.log('Mobile:', mobile);
+    console.log('Entered mobile:', mobileInput);
+    console.log('Normalized mobile:', normalizedMobile);
 
-    if (!mobile) {
+    if (!/^[6-9]\d{9}$/.test(normalizedMobile)) {
       return {
         success: false,
         canRegister: false,
-        message:
-          'Please enter a valid Mobile Number.',
+        message: 'Please enter a valid 10-digit Mobile Number.',
       };
     }
 
-    // =======================================================
-    // FIND MEMBER BY MOBILE
-    // =======================================================
-
-    const member =
-      await this.memberRepository.findOne({
-        where: {
-          mobile,
-        },
-      });
+    // Search membership using the last 10 digits,
+    // regardless of country code or formatting in the database.
+    const member = await this.memberRepository
+      .createQueryBuilder('member')
+      .where(
+        "RIGHT(REGEXP_REPLACE(member.mobile, '[^0-9]', ''), 10) = :mobile",
+        { mobile: normalizedMobile },
+      )
+      .getOne();
 
     if (!member) {
+      console.log('Membership not found for:', normalizedMobile);
+
       return {
         success: false,
         canRegister: false,
@@ -96,30 +95,10 @@ export class MatrimonialUsersService {
       };
     }
 
-    console.log(
-      'Member found:',
-      member.member_id,
-    );
+    console.log('Member found:', member.member_id);
+    console.log('Member mobile:', member.mobile);
 
-    console.log(
-      'Member Name:',
-      member.full_name,
-    );
-
-    console.log(
-      'Father Name:',
-      member.father_name,
-    );
-
-    console.log(
-      'Member Mobile:',
-      member.mobile,
-    );
-
-    // =======================================================
-    // CHECK EXISTING MATRIMONIAL
-    // =======================================================
-
+    // Check whether this member already has a matrimonial profile.
     const existingMatrimonial =
       await this.userRepository.findOne({
         where: {
@@ -127,111 +106,49 @@ export class MatrimonialUsersService {
         },
       });
 
-    // =======================================================
-    // ALREADY REGISTERED
-    // =======================================================
-
     if (existingMatrimonial) {
-
       return {
         success: false,
         canRegister: false,
         alreadyRegistered: true,
-
-        message:
-          'This Member is already registered in Matrimonial.',
-
+        message: 'This Member is already registered in Matrimonial.',
         data: {
-
-          member_id:
-            member.member_id,
-
-          matrimonial_id:
-            existingMatrimonial.id,
-
-          full_name:
-            member.full_name,
-
-          father_name:
-            member.father_name || null,
-
-          mobile:
-            member.mobile,
-
-          email:
-            member.email,
-
-          gender:
-            member.gender,
-
-          occupation:
-            member.occupation,
-
-          date_of_birth:
-            member.date_of_birth,
-
-          photo:
-            member.photo,
-
-          status:
-            existingMatrimonial.status,
-
-          approved_at:
-            existingMatrimonial.approved_at,
-
-          expiry_date:
-            existingMatrimonial.expiry_date,
+          member_id: member.member_id,
+          matrimonial_id: existingMatrimonial.id,
+          full_name: member.full_name,
+          father_name: member.father_name || null,
+          mobile: member.mobile,
+          email: member.email,
+          gender: member.gender,
+          occupation: member.occupation,
+          date_of_birth: member.date_of_birth,
+          photo: member.photo,
+          status: existingMatrimonial.status,
+          approved_at: existingMatrimonial.approved_at,
+          expiry_date: existingMatrimonial.expiry_date,
         },
       };
     }
 
-    // =======================================================
-    // VERIFIED MEMBER
-    // =======================================================
-
     return {
-
       success: true,
-
       canRegister: true,
-
       alreadyRegistered: false,
-
       message:
         'Member verified. You can now complete the Matrimonial form.',
-
       data: {
-
-        member_id:
-          member.member_id,
-
-        full_name:
-          member.full_name,
-
-        father_name:
-          member.father_name || null,
-
-        mobile:
-          member.mobile,
-
-        email:
-          member.email,
-
-        gender:
-          member.gender,
-
-        occupation:
-          member.occupation,
-
-        date_of_birth:
-          member.date_of_birth,
-
-        photo:
-          member.photo,
+        member_id: member.member_id,
+        full_name: member.full_name,
+        father_name: member.father_name || null,
+        mobile: member.mobile,
+        email: member.email,
+        gender: member.gender,
+        occupation: member.occupation,
+        date_of_birth: member.date_of_birth,
+        photo: member.photo,
       },
     };
   }
-
 
   // =========================================================
   // REGISTER MATRIMONIAL MEMBER
