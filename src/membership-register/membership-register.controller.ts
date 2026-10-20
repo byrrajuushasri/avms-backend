@@ -1,4 +1,6 @@
+
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -21,6 +23,33 @@ import { MembershipRegisterService } from './membership-register.service';
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 
+// =========================================================
+// MOBILE NUMBER VALIDATION
+// Saves only 10-digit Indian mobile numbers
+// =========================================================
+
+function validateMobileNumber(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new BadRequestException('Mobile number is required.');
+  }
+
+  let mobile = value.trim().replace(/[\s()-]/g, '');
+
+  if (mobile.startsWith('+91')) {
+    mobile = mobile.slice(3);
+  } else if (mobile.startsWith('91') && mobile.length === 12) {
+    mobile = mobile.slice(2);
+  }
+
+  if (!/^[6-9]\d{9}$/.test(mobile)) {
+    throw new BadRequestException(
+      'Please enter a valid 10-digit Indian mobile number.',
+    );
+  }
+
+  return mobile;
+}
+
 @Controller('membership-register')
 export class MembershipRegisterController {
   constructor(
@@ -28,7 +57,7 @@ export class MembershipRegisterController {
   ) {}
 
   // =========================================================
-  // CREATE
+  // CREATE MEMBER
   // POST /membership-register
   // =========================================================
 
@@ -63,7 +92,7 @@ export class MembershipRegisterController {
           callback(null, true);
         } else {
           callback(
-            new Error(
+            new BadRequestException(
               'Only JPG, JPEG, PNG or WEBP images are allowed',
             ),
             false,
@@ -76,14 +105,25 @@ export class MembershipRegisterController {
     @Body() dto: CreateMembershipRegisterDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    console.log('CREATE DTO:', dto);
+    console.log('CREATE DTO:', {
+      ...dto,
+      mobile: dto.mobile ? '[provided]' : undefined,
+    });
     console.log('CREATE FILE:', file?.filename);
+
+    const validatedDto = {
+      ...dto,
+      mobile: validateMobileNumber(dto.mobile),
+    };
 
     const photoPath = file
       ? `/uploads/members/${file.filename}`
       : undefined;
 
-    return this.membershipService.create(dto, photoPath);
+    return this.membershipService.create(
+      validatedDto,
+      photoPath,
+    );
   }
 
   // =========================================================
@@ -96,14 +136,7 @@ export class MembershipRegisterController {
     @Query('sangham') sangham?: string,
     @Query('role') role?: string,
   ) {
-    console.log('GET MEMBERS');
-    console.log('ROLE:', role);
-    console.log('SANGHAM:', sangham);
-
-    return this.membershipService.findAll(
-      sangham,
-      role,
-    );
+    return this.membershipService.findAll(sangham, role);
   }
 
   // =========================================================
@@ -137,8 +170,6 @@ export class MembershipRegisterController {
   async remove(
     @Param('id', ParseIntPipe) id: number,
   ) {
-    console.log('DELETE MEMBER ID:', id);
-
     return this.membershipService.remove(id);
   }
 
@@ -152,7 +183,6 @@ export class MembershipRegisterController {
     FileInterceptor('photo', {
       storage: diskStorage({
         destination: './uploads/members',
-
         filename: (req, file, callback) => {
           const uniqueName =
             `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(
@@ -179,7 +209,7 @@ export class MembershipRegisterController {
           callback(null, true);
         } else {
           callback(
-            new Error(
+            new BadRequestException(
               'Only JPG, JPEG, PNG or WEBP images are allowed',
             ),
             false,
@@ -193,13 +223,18 @@ export class MembershipRegisterController {
     @Body() dto: UpdateMembershipRegisterDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    console.log('UPDATE MEMBER ID:', id);
-    console.log('UPDATE DTO:', dto);
-    console.log('UPDATE FILE:', file?.filename);
-
-    if (!dto) {
-      dto = {} as UpdateMembershipRegisterDto;
-    }
+    const validatedDto = {
+      ...dto,
+      ...(dto.mobile !== undefined &&
+      dto.mobile !== null &&
+      String(dto.mobile).trim() !== ''
+        ? {
+            mobile: validateMobileNumber(
+              String(dto.mobile),
+            ),
+          }
+        : {}),
+    };
 
     const photoPath = file
       ? `/uploads/members/${file.filename}`
@@ -207,7 +242,7 @@ export class MembershipRegisterController {
 
     return this.membershipService.update(
       id,
-      dto,
+      validatedDto,
       photoPath,
     );
   }

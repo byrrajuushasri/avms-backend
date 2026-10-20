@@ -513,6 +513,76 @@ export class MatrimonialUsersService {
       data?.annual_income || null;
 
 
+    // =======================================================
+    // MARITAL STATUS
+    // =======================================================
+
+    const maritalStatus = data?.marital_status
+      ? String(data.marital_status).trim()
+      : 'Never Married';
+
+    user.marital_status = maritalStatus;
+
+    // =======================================================
+    // NUMBER OF CHILDREN
+    // =======================================================
+
+    const childrenValue = data?.number_of_children;
+
+    if (
+      maritalStatus === 'Divorced' ||
+      maritalStatus === 'Awaiting Divorce'
+    ) {
+      const children = Number(childrenValue);
+
+      user.number_of_children =
+        childrenValue !== '' &&
+        childrenValue !== null &&
+        childrenValue !== undefined &&
+        Number.isInteger(children) &&
+        children >= 0
+          ? children
+          : 0;
+    } else {
+      user.number_of_children = 0;
+    }
+
+    // =======================================================
+    // PREVIOUS MARRIAGE CONDITIONS
+    // =======================================================
+
+    user.previous_marriage_conditions =
+      maritalStatus === 'Divorced' ||
+      maritalStatus === 'Awaiting Divorce'
+        ? data?.previous_marriage_conditions
+          ? String(data.previous_marriage_conditions).trim()
+          : null
+        : null;
+
+    // =======================================================
+    // PHYSICAL STATUS
+    // =======================================================
+
+    user.physical_status = data?.physical_status
+      ? String(data.physical_status).trim()
+      : 'Normal';
+
+    // =======================================================
+    // FAMILY STATUS
+    // =======================================================
+
+    user.family_status = data?.family_status
+      ? String(data.family_status).trim()
+      : null;
+
+    // =======================================================
+    // ADDITIONAL DETAILS
+    // =======================================================
+
+    user.additional_details = data?.additional_details
+      ? String(data.additional_details).trim()
+      : null;
+
     // -------------------------------------------------------
     // ADDRESS
     // -------------------------------------------------------
@@ -1558,6 +1628,105 @@ export class MatrimonialUsersService {
 
       matrimonial.education =
         data.education;
+    }
+
+    // =======================================================
+    // MARITAL STATUS
+    // =======================================================
+
+    if (data?.marital_status !== undefined) {
+      matrimonial.marital_status = data.marital_status
+        ? String(data.marital_status).trim()
+        : null;
+
+      const maritalStatus = String(
+        data.marital_status || '',
+      ).trim();
+
+      if (
+        maritalStatus !== 'Divorced' &&
+        maritalStatus !== 'Awaiting Divorce'
+      ) {
+        matrimonial.number_of_children = 0;
+        matrimonial.previous_marriage_conditions = null;
+      }
+    }
+
+    // =======================================================
+    // NUMBER OF CHILDREN
+    // =======================================================
+
+    if (data?.number_of_children !== undefined) {
+      if (
+        data.number_of_children === '' ||
+        data.number_of_children === null
+      ) {
+        matrimonial.number_of_children = 0;
+      } else {
+        const children = Number(data.number_of_children);
+
+        if (
+          Number.isInteger(children) &&
+          children >= 0
+        ) {
+          matrimonial.number_of_children = children;
+        }
+      }
+    }
+
+    // =======================================================
+    // PREVIOUS MARRIAGE CONDITIONS
+    // =======================================================
+
+    if (data?.previous_marriage_conditions !== undefined) {
+      const maritalStatus = String(
+        data?.marital_status ??
+          matrimonial.marital_status ??
+          '',
+      ).trim();
+
+      matrimonial.previous_marriage_conditions =
+        maritalStatus === 'Divorced' ||
+        maritalStatus === 'Awaiting Divorce'
+          ? data.previous_marriage_conditions
+            ? String(
+                data.previous_marriage_conditions,
+              ).trim()
+            : null
+          : null;
+    }
+
+    // =======================================================
+    // PHYSICAL STATUS
+    // =======================================================
+
+    if (data?.physical_status !== undefined) {
+      matrimonial.physical_status =
+        data.physical_status
+          ? String(data.physical_status).trim()
+          : null;
+    }
+
+    // =======================================================
+    // FAMILY STATUS
+    // =======================================================
+
+    if (data?.family_status !== undefined) {
+      matrimonial.family_status =
+        data.family_status
+          ? String(data.family_status).trim()
+          : null;
+    }
+
+    // =======================================================
+    // ADDITIONAL DETAILS
+    // =======================================================
+
+    if (data?.additional_details !== undefined) {
+      matrimonial.additional_details =
+        data.additional_details
+          ? String(data.additional_details).trim()
+          : null;
     }
 
 

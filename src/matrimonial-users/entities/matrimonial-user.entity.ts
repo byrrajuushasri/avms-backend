@@ -25,6 +25,69 @@ export class MatrimonialUser {
   })
   profile_category: string | null;
 
+  // =========================================================
+  // MARITAL STATUS
+  // =========================================================
+
+  @Column({
+    type: 'varchar',
+    length: 30,
+    nullable: true,
+  })
+  marital_status: string | null;
+
+  // =========================================================
+  // NUMBER OF CHILDREN
+  // =========================================================
+
+  @Column({
+    type: 'int',
+    nullable: true,
+  })
+  number_of_children: number | null;
+
+  // =========================================================
+  // PREVIOUS MARRIAGE CONDITIONS
+  // =========================================================
+
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  previous_marriage_conditions: string | null;
+
+  // =========================================================
+  // PHYSICAL STATUS
+  // =========================================================
+
+  @Column({
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  physical_status: string | null;
+
+  // =========================================================
+  // FAMILY STATUS
+  // =========================================================
+
+  @Column({
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  family_status: string | null;
+
+  // =========================================================
+  // ADDITIONAL DETAILS
+  // =========================================================
+
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  additional_details: string | null;
+
   @Column({
     type: 'varchar',
     length: 150,

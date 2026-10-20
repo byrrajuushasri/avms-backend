@@ -1,142 +1,120 @@
-async sendMatrimonyRegistrationEmail(params: {
-  email: string;
-  name: string;
-  memberId: string;
-  matrimonialId: number;
-  registrationDate: Date;
-  expiryDate: Date;
-}) {
-  const {
-    email,
-    name,
-    memberId,
-    matrimonialId,
-    registrationDate,
-    expiryDate,
-  } = params;
 
-  // =========================================================
-  // EMAIL CHECK
-  // =========================================================
+import { Injectable, Logger } from '@nestjs/common';
+import { Resend } from 'resend';
 
-  if (!email) {
-    this.logger.warn(
-      'Matrimony approval email not sent: email address is missing.',
-    );
+@Injectable()
+export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
 
-    return {
-      success: false,
-      message: 'Email address is missing',
-    };
+  private readonly resend = new Resend(
+    process.env.RESEND_API_KEY,
+  );
+
+  async sendMatrimonyRegistrationEmail(params: {
+    email: string;
+    name: string;
+    memberId: string;
+    matrimonialId: number;
+    registrationDate: Date;
+    expiryDate: Date;
+  }): Promise<void> {
+    try {
+      const {
+        email,
+        name,
+        memberId,
+        matrimonialId,
+        registrationDate,
+        expiryDate,
+      } = params;
+
+      const formatDate = (date: Date): string =>
+        new Date(date).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'Asia/Kolkata',
+        });
+
+      const { data, error } = await this.resend.emails.send({
+        from:
+          process.env.RESEND_FROM_EMAIL ||
+          'noreply@aaryavysyamahasabha.com',
+        to: [email],
+        subject:
+          'Matrimony Registration Approved - Telangana State Arya Vysya Mahasabha',
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;line-height:1.6">
+            <h2 style="color:#800018">
+              Telangana State Arya Vysya Mahasabha
+            </h2>
+
+            <p>Dear ${this.escapeHtml(name)},</p>
+
+            <p>
+              Congratulations! Your matrimony registration has been
+              approved by the administrator.
+            </p>
+
+            <div style="border:1px solid #ddd;padding:18px;border-radius:8px">
+              <h3 style="color:#800018">Registration Details</h3>
+              <p><strong>Name:</strong> ${this.escapeHtml(name)}</p>
+              <p><strong>Membership ID:</strong> ${this.escapeHtml(memberId)}</p>
+              <p><strong>Matrimonial ID:</strong> ${matrimonialId}</p>
+              <p><strong>Registration Date:</strong> ${formatDate(registrationDate)}</p>
+              <p><strong>Expiry Date:</strong> ${formatDate(expiryDate)}</p>
+              <p><strong>Registration Type:</strong> FREE REGISTRATION</p>
+              <p><strong>Validity:</strong> 99 days</p>
+            </div>
+
+            <p>
+              Your free registration is valid for 99 days.
+              An extension of 180 days may be available with
+              volunteer contribution, subject to the applicable
+              Mahasabha rules.
+            </p>
+
+            <p>Thank you for registering with us.</p>
+
+            <p>
+              Regards,<br />
+              <strong>Telangana State Arya Vysya Mahasabha</strong>
+            </p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        this.logger.error(
+          `Matrimony approval email failed: ${error.message}`,
+        );
+        return;
+      }
+
+      this.logger.log(
+        `Matrimony approval email sent to ${email}. ID: ${data?.id}`,
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+
+      this.logger.error(
+        `Failed to send matrimony approval email: ${message}`,
+      );
+    }
   }
 
-  // =========================================================
-  // FROM EMAIL
-  // =========================================================
+  private escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, (character) => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      };
 
-  const fromEmail =
-    process.env.RESEND_FROM_EMAIL ||
-    'noreply@aaryavysyamahasabha.com';
-
-  // =========================================================
-  // DATE FORMAT
-  // =========================================================
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
+      return entities[character];
     });
-  };
-
-  const formattedRegistrationDate =
-    formatDate(registrationDate);
-
-  const formattedExpiryDate =
-    formatDate(expiryDate);
-
-  // =========================================================
-  // SUBJECT
-  // =========================================================
-
-  const subject =
-    'Matrimonial Registration Approved - Aarya Vysya Matrimony';
-
-  // =========================================================
-  // SIMPLE EMAIL
-  // =========================================================
-
-  const emailText = `
-Dear ${name || 'Member'},
-
-Congratulations!
-
-Your matrimonial registration with Aarya Vysya Matrimony has been approved successfully.
-
-Registration Details:
-
-Membership ID: ${memberId}
-Matrimonial ID: ${matrimonialId}
-Registration Date: ${formattedRegistrationDate}
-Expiry Date: ${formattedExpiryDate}
-
-FREE REGISTRATION
-
-Your matrimonial registration is FREE and valid for 99 days from the registration/approval date.
-
-EXTENSION
-
-The registration can be extended for another 180 days with a volunteer contribution in three digits, as applicable.
-
-Please keep your Membership ID and Matrimonial ID safely for future reference.
-
-Thank you for registering with Aarya Vysya Matrimony.
-
-Regards,
-Aarya Vysya Matrimony
-Aarya Vysya Mahasabha
-Hyderabad, Telangana
-
-Email: beldaguru@gmail.com
-Phone: 9246119408
-Website: www.aaryavysyamahasabha.com
-  `.trim();
-
-  // =========================================================
-  // SEND EMAIL
-  // =========================================================
-
-  try {
-    const result = await this.resend.emails.send({
-      from: `Aarya Vysya Matrimony <${fromEmail}>`,
-
-      to: [email],
-
-      replyTo: 'beldaguru@gmail.com',
-
-      subject,
-
-      text: emailText,
-    });
-
-    this.logger.log(
-      `Matrimony approval email sent successfully to ${email}`,
-    );
-
-    return {
-      success: true,
-      data: result,
-    };
-  } catch (error) {
-    this.logger.error(
-      `Failed to send matrimony approval email to ${email}`,
-      error,
-    );
-
-    return {
-      success: false,
-      message: 'Email sending failed',
-    };
   }
 }

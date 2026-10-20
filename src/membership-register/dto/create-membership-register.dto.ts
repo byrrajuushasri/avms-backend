@@ -1,8 +1,10 @@
+
 import {
   IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
 } from 'class-validator';
 
 export class CreateMembershipRegisterDto {
@@ -28,6 +30,13 @@ export class CreateMembershipRegisterDto {
 
   @IsNotEmpty()
   @IsString()
+  @Matches(
+    /^(?:[6-9]\d{9}|\+91[6-9]\d{9})$/,
+    {
+      message:
+        'Enter a valid 10-digit Indian mobile number, with or without +91.',
+    },
+  )
   mobile: string;
 
   @IsNotEmpty()
@@ -46,7 +55,6 @@ export class CreateMembershipRegisterDto {
   @IsString()
   occupation: string;
 
-  
   @IsNotEmpty()
   @IsString()
   gender: string;
