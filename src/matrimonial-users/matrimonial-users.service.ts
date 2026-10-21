@@ -95,6 +95,15 @@ export class MatrimonialUsersService {
       };
     }
 
+    if (String(member.status).trim().toLowerCase() !== 'active') {
+      return {
+        success: false,
+        canRegister: false,
+        message:
+          'Your membership is awaiting admin approval. You can register for Matrimony after it is approved.',
+      };
+    }
+
     console.log('Member found:', member.member_id);
     console.log('Member mobile:', member.mobile);
 
@@ -214,6 +223,15 @@ export class MatrimonialUsersService {
         canRegister: false,
         message:
           'Membership record not found. Please verify your membership again.',
+      };
+    }
+
+    if (String(member.status).trim().toLowerCase() !== 'active') {
+      return {
+        success: false,
+        canRegister: false,
+        message:
+          'Your membership is awaiting admin approval. You can register for Matrimony after it is approved.',
       };
     }
 
@@ -689,15 +707,15 @@ export class MatrimonialUsersService {
         });
 
 
-      // =====================================================
-      // IMPORTANT
-      // =====================================================
-      //
-      // NO EMAIL IS SENT HERE.
-      //
-      // Email will be sent ONLY after Admin approval.
-      //
-      // =====================================================
+      const registrationEmail = savedMember?.email?.trim();
+      const emailSent = registrationEmail
+        ? await this.emailService.sendMatrimonySubmissionEmail({
+            email: registrationEmail,
+            name: savedMember?.full_name || 'Member',
+            memberId: savedUser.member_id,
+            matrimonialId: savedUser.id,
+          })
+        : false;
 
       console.log(
         'Matrimonial registered successfully.',
@@ -708,11 +726,6 @@ export class MatrimonialUsersService {
         savedUser.status,
       );
 
-      console.log(
-        'Email will be sent only after Admin approval.',
-      );
-
-
       // =====================================================
       // RETURN SUCCESS RESPONSE
       // =====================================================
@@ -722,7 +735,11 @@ export class MatrimonialUsersService {
         success: true,
 
         message:
-          'Matrimonial member added successfully. Waiting for Admin approval.',
+          emailSent
+            ? 'Matrimonial registration submitted. Confirmation email sent; waiting for admin approval.'
+            : 'Matrimonial registration submitted. Waiting for admin approval; confirmation email could not be sent.',
+
+        email_sent: emailSent,
 
         data: {
 
@@ -967,10 +984,7 @@ export class MatrimonialUsersService {
         : '';
 
 
-    let emailResult: any = {
-      success: false,
-      message: 'Member email is missing',
-    };
+    let emailSent = false;
 
 
     if (registrationEmail) {
@@ -997,7 +1011,7 @@ export class MatrimonialUsersService {
 
       try {
 
-        emailResult =
+        emailSent =
           await this.emailService
             .sendMatrimonyRegistrationEmail({
 
@@ -1040,11 +1054,7 @@ export class MatrimonialUsersService {
           '==========================================',
         );
 
-        emailResult = {
-          success: false,
-          message:
-            'Profile approved, but email sending failed.',
-        };
+        emailSent = false;
       }
 
     } else {
@@ -1066,7 +1076,7 @@ export class MatrimonialUsersService {
       alreadyApproved: false,
 
       message:
-        emailResult?.success
+        emailSent
           ? 'Matrimonial profile approved and email sent successfully.'
           : 'Matrimonial profile approved, but email was not sent.',
 
@@ -1094,9 +1104,7 @@ export class MatrimonialUsersService {
           approvedUser.expiry_date,
 
         email_sent:
-          Boolean(
-            emailResult?.success,
-          ),
+          emailSent,
       },
     };
   }

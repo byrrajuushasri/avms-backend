@@ -17,6 +17,7 @@ import {
 import { MembershipRegister } from './entities/membership-register.entity';
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class MembershipRegisterService {
@@ -24,6 +25,7 @@ export class MembershipRegisterService {
     @InjectRepository(MembershipRegister)
     private readonly membershipRepository: Repository<MembershipRegister>,
     private readonly dataSource: DataSource,
+    private readonly emailService: EmailService,
   ) {}
 
   // =========================================================
@@ -370,7 +372,7 @@ export class MembershipRegisterService {
     member.photo = photoPath || null;
 
     // STATUS
-    member.status = 'Active';
+    member.status = 'Pending';
 
     // MAHASHABA PAYMENT
     member.mahashaba_payment_status = null;
@@ -593,6 +595,9 @@ export class MembershipRegisterService {
       );
     }
 
+    const wasApproved =
+      String(member.status).trim().toLowerCase() === 'active';
+
     // BASIC DETAILS
     if (dto.full_name !== undefined) {
       member.full_name = dto.full_name?.trim();
@@ -765,12 +770,31 @@ export class MembershipRegisterService {
     // SAVE
     try {
       const updated = await this.membershipRepository.save(member);
+      const isApproved =
+        String(updated.status).trim().toLowerCase() === 'active';
+      let emailSent: boolean | undefined;
+
+      if (!wasApproved && isApproved) {
+        emailSent = updated.email
+          ? await this.emailService.sendMembershipApprovalEmail({
+              email: updated.email,
+              name: updated.full_name || 'Member',
+              memberId: updated.member_id,
+            })
+          : false;
+      }
 
       const { password, ...safeMember } = updated;
 
       return {
         success: true,
-        message: 'Membership updated successfully',
+        message:
+          emailSent === undefined
+            ? 'Membership updated successfully'
+            : emailSent
+              ? 'Membership approved and email sent successfully'
+              : 'Membership approved, but email could not be sent',
+        ...(emailSent !== undefined ? { email_sent: emailSent } : {}),
         data: safeMember,
       };
     } catch (error: any) {
