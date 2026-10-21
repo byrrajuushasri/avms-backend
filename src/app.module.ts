@@ -15,6 +15,7 @@ import { SatramsModule } from "./satrams/satrams.module";
 import { AuthModule } from "./auth/auth.module";
 import { MailModule } from './mail/mail.module';
 import { EmailModule } from './email/email.module';
+import { ContactMessagesModule } from './contact-messages/contact-messages.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { EmailModule } from './email/email.module';
     AuthModule,
     MailModule,
     EmailModule,
+    ContactMessagesModule,
   ],
 })
 export class AppModule {}
