@@ -2012,7 +2012,7 @@ export class MatrimonialUsersService {
       );
     }
 
-
+     
     await this.userRepository.remove(
       member,
     );
