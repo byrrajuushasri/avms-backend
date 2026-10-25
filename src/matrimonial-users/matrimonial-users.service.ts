@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -454,7 +455,11 @@ export class MatrimonialUsersService {
 
     const maritalStatus = data?.marital_status
       ? String(data.marital_status).trim()
-      : 'Never Married';
+      : '';
+
+    if (!maritalStatus) {
+      throw new BadRequestException('Please select Marital Status.');
+    }
 
     user.marital_status = maritalStatus;
 
@@ -468,16 +473,25 @@ export class MatrimonialUsersService {
       maritalStatus === 'Divorced' ||
       maritalStatus === 'Awaiting Divorce'
     ) {
+      if (
+        childrenValue === '' ||
+        childrenValue === null ||
+        childrenValue === undefined
+      ) {
+        throw new BadRequestException(
+          'Please enter Number of Children.',
+        );
+      }
+
       const children = Number(childrenValue);
 
-      user.number_of_children =
-        childrenValue !== '' &&
-        childrenValue !== null &&
-        childrenValue !== undefined &&
-        Number.isInteger(children) &&
-        children >= 0
-          ? children
-          : 0;
+      if (!Number.isInteger(children) || children < 0) {
+        throw new BadRequestException(
+          'Number of Children must be a whole number greater than or equal to 0.',
+        );
+      }
+
+      user.number_of_children = children;
     } else {
       user.number_of_children = 0;
     }
