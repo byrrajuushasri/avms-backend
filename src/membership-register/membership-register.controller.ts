@@ -15,17 +15,14 @@ import {
 } from '@nestjs/common';
 
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-
 import { MembershipRegisterService } from './membership-register.service';
 
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
+import { StorageService } from '../storage/storage.service';
 
 // =========================================================
 // MOBILE NUMBER VALIDATION
-// Saves only 10-digit Indian mobile numbers
 // =========================================================
 
 function validateMobileNumber(value: unknown): string {
@@ -50,75 +47,65 @@ function validateMobileNumber(value: unknown): string {
   return mobile;
 }
 
+// =========================================================
+// IMAGE UPLOAD CONFIGURATION
+// =========================================================
+
+const photoUploadOptions = {
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (
+    req: Express.Request,
+    file: Express.Multer.File,
+    callback: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
+    const allowed = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+    ];
+
+    if (allowed.includes(file.mimetype)) {
+      callback(null, true);
+    } else {
+      callback(
+        new BadRequestException(
+          'Only JPG, JPEG, PNG or WEBP images are allowed',
+        ),
+        false,
+      );
+    }
+  },
+};
+
 @Controller('membership-register')
 export class MembershipRegisterController {
   constructor(
     private readonly membershipService: MembershipRegisterService,
+    private readonly storageService: StorageService,
   ) {}
 
-  // =========================================================
   // CREATE MEMBER
   // POST /membership-register
-  // =========================================================
 
   @Post()
-  @UseInterceptors(
-    FileInterceptor('photo', {
-      storage: diskStorage({
-        destination: './uploads/members',
-        filename: (req, file, callback) => {
-          const uniqueName =
-            `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(
-              file.originalname,
-            )}`;
-
-          callback(null, uniqueName);
-        },
-      }),
-
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-
-      fileFilter: (req, file, callback) => {
-        const allowed = [
-          'image/jpeg',
-          'image/jpg',
-          'image/png',
-          'image/webp',
-        ];
-
-        if (allowed.includes(file.mimetype)) {
-          callback(null, true);
-        } else {
-          callback(
-            new BadRequestException(
-              'Only JPG, JPEG, PNG or WEBP images are allowed',
-            ),
-            false,
-          );
-        }
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('photo', photoUploadOptions))
   async create(
     @Body() dto: CreateMembershipRegisterDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    console.log('CREATE DTO:', {
-      ...dto,
-      mobile: dto.mobile ? '[provided]' : undefined,
-    });
-    console.log('CREATE FILE:', file?.filename);
-
     const validatedDto = {
       ...dto,
       mobile: validateMobileNumber(dto.mobile),
     };
 
-    const photoPath = file
-      ? `/uploads/members/${file.filename}`
+    const uploaded = file
+      ? await this.storageService.uploadImage(file, 'members')
       : undefined;
+
+    const photoPath = uploaded?.key;
 
     return this.membershipService.create(
       validatedDto,
@@ -126,10 +113,8 @@ export class MembershipRegisterController {
     );
   }
 
-  // =========================================================
   // GET ALL MEMBERS
   // GET /membership-register
-  // =========================================================
 
   @Get()
   async findAll(
@@ -139,85 +124,35 @@ export class MembershipRegisterController {
     return this.membershipService.findAll(sangham, role);
   }
 
-  // =========================================================
   // PUBLIC EXECUTIVES
   // GET /membership-register/public/executives
-  // =========================================================
 
   @Get('public/executives')
   async findPublicExecutives() {
     return this.membershipService.findPublicExecutives();
   }
 
-  // =========================================================
   // GET ONE MEMBER
   // GET /membership-register/:id
-  // =========================================================
 
   @Get(':id')
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-  ) {
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.membershipService.findOne(id);
   }
 
-  // =========================================================
   // DELETE MEMBER
   // DELETE /membership-register/:id
-  // =========================================================
 
   @Delete(':id')
-  async remove(
-    @Param('id', ParseIntPipe) id: number,
-  ) {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     return this.membershipService.remove(id);
   }
 
-  // =========================================================
   // UPDATE MEMBER
   // PUT /membership-register/:id
-  // =========================================================
 
   @Put(':id')
-  @UseInterceptors(
-    FileInterceptor('photo', {
-      storage: diskStorage({
-        destination: './uploads/members',
-        filename: (req, file, callback) => {
-          const uniqueName =
-            `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(
-              file.originalname,
-            )}`;
-
-          callback(null, uniqueName);
-        },
-      }),
-
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-
-      fileFilter: (req, file, callback) => {
-        const allowed = [
-          'image/jpeg',
-          'image/jpg',
-          'image/png',
-          'image/webp',
-        ];
-
-        if (allowed.includes(file.mimetype)) {
-          callback(null, true);
-        } else {
-          callback(
-            new BadRequestException(
-              'Only JPG, JPEG, PNG or WEBP images are allowed',
-            ),
-            false,
-          );
-        }
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('photo', photoUploadOptions))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMembershipRegisterDto,
@@ -229,16 +164,16 @@ export class MembershipRegisterController {
       dto.mobile !== null &&
       String(dto.mobile).trim() !== ''
         ? {
-            mobile: validateMobileNumber(
-              String(dto.mobile),
-            ),
+            mobile: validateMobileNumber(String(dto.mobile)),
           }
         : {}),
     };
 
-    const photoPath = file
-      ? `/uploads/members/${file.filename}`
+    const uploaded = file
+      ? await this.storageService.uploadImage(file, 'members')
       : undefined;
+
+    const photoPath = uploaded?.key;
 
     return this.membershipService.update(
       id,

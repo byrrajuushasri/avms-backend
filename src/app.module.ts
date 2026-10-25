@@ -16,6 +16,7 @@ import { AuthModule } from "./auth/auth.module";
 import { MailModule } from './mail/mail.module';
 import { EmailModule } from './email/email.module';
 import { ContactMessagesModule } from './contact-messages/contact-messages.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ContactMessagesModule } from './contact-messages/contact-messages.modul
     MailModule,
     EmailModule,
     ContactMessagesModule,
+    StorageModule,
   ],
 })
 export class AppModule {}

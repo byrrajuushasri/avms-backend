@@ -1,3 +1,4 @@
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -6,11 +7,13 @@ import { MembershipRegisterService } from './membership-register.service';
 import { MembershipRegister } from './entities/membership-register.entity';
 
 import { EmailModule } from '../email/email.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([MembershipRegister]),
     EmailModule,
+    StorageModule,
   ],
   controllers: [
     MembershipRegisterController,
