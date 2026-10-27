@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsEmail,
   IsString,
+  MinLength,
 } from 'class-validator';
 
 export class CreateMatrimonialUserDto {
@@ -74,6 +75,7 @@ export class CreateMatrimonialUserDto {
 
   @IsNotEmpty()
   @IsString()
+  @MinLength(6)
   password: string;
 
   @IsOptional()

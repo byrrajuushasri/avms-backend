@@ -91,9 +91,8 @@ export class MatrimonialUser {
   @Column({
     type: 'varchar',
     length: 150,
-    nullable: true,
   })
-  father_name: string | null;
+  father_name: string;
 
   @Column({
     type: 'varchar',

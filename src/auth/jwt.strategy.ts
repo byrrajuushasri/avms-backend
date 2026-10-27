@@ -60,6 +60,12 @@ export class JwtStrategy extends PassportStrategy(
       email:
         payload.email,
 
+      account_type:
+        payload.account_type || "member",
+
+      matrimonial_id:
+        payload.matrimonial_id ?? null,
+
       role:
         payload.role || "user",
 

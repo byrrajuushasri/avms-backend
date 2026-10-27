@@ -23,6 +23,8 @@ import { JwtStrategy } from "./jwt.strategy";
 
 import { MembershipRegister } from
   "../membership-register/entities/membership-register.entity";
+import { MatrimonialUser } from
+  "../matrimonial-users/entities/matrimonial-user.entity";
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { MembershipRegister } from
 
     TypeOrmModule.forFeature([
       MembershipRegister,
+      MatrimonialUser,
     ]),
 
     PassportModule.register({

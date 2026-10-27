@@ -6,16 +6,21 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Req,
   Put,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Request } from 'express';
 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 import { MatrimonialUsersService } from './matrimonial-users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { MatrimonialProfileOwnerGuard } from './matrimonial-profile-owner.guard';
 
 
 @Controller('matrimonial-users')
@@ -215,6 +220,54 @@ export class MatrimonialUsersController {
   // UPDATE MATRIMONIAL USER
   // =========================================================
 
+  @Put(':id/my-profile')
+  @UseGuards(JwtAuthGuard, MatrimonialProfileOwnerGuard)
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: diskStorage({
+        destination: './uploads/matrimonial',
+        filename: (req, file, callback) => {
+          const uniqueName =
+            `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
+            extname(file.originalname);
+
+          callback(null, uniqueName);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return callback(
+            new Error('Only image files are allowed'),
+            false,
+          );
+        }
+
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  async updateOwnProfile(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: any,
+    @UploadedFile() photo: Express.Multer.File | undefined,
+    @Req() req: Request,
+  ) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+    };
+
+    return this.matrimonialUsersService.updateOwnProfile(
+      id,
+      data,
+      photo,
+      user,
+    );
+  }
+
   @Put(':id')
   @UseInterceptors(
     FileInterceptor('photo', {
@@ -330,4 +383,3 @@ export class MatrimonialUsersController {
   }
 
 }
-

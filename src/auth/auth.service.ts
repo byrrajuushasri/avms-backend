@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
@@ -12,12 +13,16 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 
 import { MembershipRegister } from "../membership-register/entities/membership-register.entity";
+import { MatrimonialUser } from "../matrimonial-users/entities/matrimonial-user.entity";
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(MembershipRegister)
     private readonly memberRepository: Repository<MembershipRegister>,
+
+    @InjectRepository(MatrimonialUser)
+    private readonly matrimonialRepository: Repository<MatrimonialUser>,
 
     private readonly jwtService: JwtService,
   ) {}
@@ -36,11 +41,13 @@ export class AuthService {
       );
     }
 
-    // Login can be done using email OR mobile
+    const normalizedLogin = login.trim();
+
+    // Login can be done using email OR mobile.
     const member = await this.memberRepository.findOne({
       where: [
-        { email: login },
-        { mobile: login },
+        { email: normalizedLogin.toLowerCase() },
+        { mobile: normalizedLogin },
       ],
     });
 
@@ -48,6 +55,69 @@ export class AuthService {
       throw new UnauthorizedException(
         "Invalid email/mobile or password",
       );
+    }
+
+    const matrimonialProfile =
+      await this.matrimonialRepository.findOne({
+        where: {
+          member_id: member.member_id,
+        },
+      });
+
+    if (matrimonialProfile?.password) {
+      const matrimonialPasswordValid = await bcrypt.compare(
+        password,
+        matrimonialProfile.password,
+      );
+
+      if (matrimonialPasswordValid) {
+        if (
+          String(matrimonialProfile.status).trim().toLowerCase() !==
+          "approved"
+        ) {
+          throw new ForbiddenException(
+            "Your matrimonial profile is awaiting administrator approval. We will email you when it is approved.",
+          );
+        }
+
+        const access_token = await this.jwtService.signAsync({
+          sub: member.id,
+          id: member.id,
+          member_id: member.member_id,
+          email: member.email,
+          role: "user",
+          account_type: "matrimonial",
+          matrimonial_id: matrimonialProfile.id,
+          district: member.district,
+          mandal: member.mandal,
+          sangham: member.sangham,
+        });
+
+        const { password: _password, ...safeProfile } = matrimonialProfile;
+
+        return {
+          message: "Login successful",
+          access_token,
+          token_type: "Bearer",
+          expires_in: "1d",
+          user: {
+            id: member.id,
+            member_id: member.member_id,
+            full_name: member.full_name,
+            email: member.email,
+            mobile: member.mobile,
+            role: "user",
+            account_type: "matrimonial",
+            matrimonial_id: matrimonialProfile.id,
+            matrimonial_status: matrimonialProfile.status,
+            district: member.district,
+            mandal: member.mandal,
+            sangham: member.sangham,
+            photo: member.photo,
+            matrimonial_profile: safeProfile,
+          },
+        };
+      }
     }
 
     // Member does not have password yet
@@ -124,6 +194,8 @@ export class AuthService {
         sangham: member.sangham,
 
         photo: member.photo,
+
+        account_type: "member",
       },
     };
   }
@@ -288,7 +360,11 @@ async bootstrapPassword(
   // GET CURRENT USER
   // =========================================================
 
-  async getProfile(userId: number) {
+  async getProfile(
+    userId: number,
+    accountType = "member",
+    matrimonialId?: number,
+  ) {
     const member =
       await this.memberRepository.findOne({
         where: {
@@ -302,7 +378,7 @@ async bootstrapPassword(
       );
     }
 
-    return {
+    const profile = {
       id: member.id,
 
       member_id: member.member_id,
@@ -323,6 +399,37 @@ async bootstrapPassword(
 
       photo: member.photo,
     };
+
+    if (accountType !== "matrimonial" || !matrimonialId) {
+      return {
+        ...profile,
+        account_type: "member",
+      };
+    }
+
+    const matrimonialProfile =
+      await this.matrimonialRepository.findOne({
+        where: {
+          id: matrimonialId,
+          member_id: member.member_id,
+        },
+      });
+
+    if (!matrimonialProfile) {
+      throw new UnauthorizedException(
+        "Matrimonial profile not found",
+      );
+    }
+
+    const { password: _password, ...safeMatrimonialProfile } =
+      matrimonialProfile;
+
+    return {
+      ...profile,
+      account_type: "matrimonial",
+      matrimonial_id: matrimonialProfile.id,
+      matrimonial_profile: safeMatrimonialProfile,
+    };
   }
 
 // =========================================================
@@ -334,6 +441,8 @@ async changeMyPassword(
   userId: number,
   currentPassword: string,
   newPassword: string,
+  accountType = "member",
+  matrimonialId?: number,
 ) {
   if (!currentPassword || !newPassword) {
     throw new BadRequestException(
@@ -347,22 +456,24 @@ async changeMyPassword(
     );
   }
 
-  // Find logged-in member
-  const member =
-    await this.memberRepository.findOne({
-      where: {
-        id: userId,
-      },
-    });
+  const account =
+    accountType === "matrimonial" && matrimonialId
+      ? await this.matrimonialRepository.findOne({
+          where: {
+            id: matrimonialId,
+          },
+        })
+      : await this.memberRepository.findOne({
+          where: {
+            id: userId,
+          },
+        });
 
-  if (!member) {
-    throw new NotFoundException(
-      "User not found",
-    );
+  if (!account) {
+    throw new NotFoundException("User not found");
   }
 
-  // Check whether password exists
-  if (!member.password) {
+  if (!account.password) {
     throw new BadRequestException(
       "Password has not been created for this account",
     );
@@ -372,7 +483,7 @@ async changeMyPassword(
   const passwordValid =
     await bcrypt.compare(
       currentPassword,
-      member.password,
+      account.password,
     );
 
   if (!passwordValid) {
@@ -385,7 +496,7 @@ async changeMyPassword(
   const samePassword =
     await bcrypt.compare(
       newPassword,
-      member.password,
+      account.password,
     );
 
   if (samePassword) {
@@ -398,9 +509,17 @@ async changeMyPassword(
   const hashedPassword =
     await bcrypt.hash(newPassword, 12);
 
-  member.password = hashedPassword;
-
-  await this.memberRepository.save(member);
+  if (accountType === "matrimonial" && matrimonialId) {
+    await this.matrimonialRepository.update(
+      { id: matrimonialId },
+      { password: hashedPassword },
+    );
+  } else {
+    await this.memberRepository.update(
+      { id: userId },
+      { password: hashedPassword },
+    );
+  }
 
   return {
     message: "Password updated successfully",

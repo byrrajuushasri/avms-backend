@@ -47,6 +47,7 @@ export class EmailService {
           <h2 style="color:#800018">Telangana State Arya Vysya Mahasabha</h2>
           <p>Dear ${this.escapeHtml(name)},</p>
           <p>We have received your matrimonial registration. It is pending administrator approval. We will notify you when it has been reviewed.</p>
+          <p>After approval, sign in with the email address and password you provided during registration to view your profile and search approved profiles.</p>
           <p><strong>Membership ID:</strong> ${this.escapeHtml(memberId)}</p>
           <p><strong>Matrimonial ID:</strong> ${matrimonialId}</p>
           <p>Regards,<br /><strong>Telangana State Arya Vysya Mahasabha</strong></p>
@@ -114,28 +115,31 @@ export class EmailService {
         subject:
           'Matrimony Registration Approved - Telangana State Arya Vysya Mahasabha',
         html: `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;line-height:1.6">
+          <div style="font-family:Arial,sans-serif;color:#333;line-height:1.6">
             <h2 style="color:#800018">
               Telangana State Arya Vysya Mahasabha
             </h2>
 
             <p>Dear ${this.escapeHtml(name)},</p>
 
-            <p>
+            <p style="color:#16803c">
               Congratulations! Your matrimony registration has been
               approved by the administrator.
             </p>
+            <p>
+              You can now sign in with the email address and password you
+              provided during registration to view your profile and search
+              approved profiles.
+            </p>
 
-            <div style="border:1px solid #ddd;padding:18px;border-radius:8px">
-              <h3 style="color:#800018">Registration Details</h3>
-              <p><strong>Name:</strong> ${this.escapeHtml(name)}</p>
-              <p><strong>Membership ID:</strong> ${this.escapeHtml(memberId)}</p>
-              <p><strong>Matrimonial ID:</strong> ${matrimonialId}</p>
-              <p><strong>Registration Date:</strong> ${formatDate(registrationDate)}</p>
-              <p><strong>Expiry Date:</strong> ${formatDate(expiryDate)}</p>
-              <p><strong>Registration Type:</strong> FREE REGISTRATION</p>
-              <p><strong>Validity:</strong> 99 days</p>
-            </div>
+            <h3 style="color:#800018">Registration Details</h3>
+            <p><strong style="color:#800018">Name:</strong> ${this.escapeHtml(name)}</p>
+            <p><strong style="color:#800018">Membership ID:</strong> ${this.escapeHtml(memberId)}</p>
+            <p><strong style="color:#800018">Matrimonial ID:</strong> ${matrimonialId}</p>
+            <p><strong style="color:#800018">Registration Date:</strong> ${formatDate(registrationDate)}</p>
+            <p><strong style="color:#800018">Expiry Date:</strong> ${formatDate(expiryDate)}</p>
+            <p><strong style="color:#800018">Registration Type:</strong> FREE REGISTRATION</p>
+            <p><strong style="color:#800018">Validity:</strong> 99 days</p>
 
             <p>
               Your free registration is valid for 99 days.

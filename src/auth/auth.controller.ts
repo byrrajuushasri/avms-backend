@@ -57,6 +57,8 @@ export class AuthController {
 
     return this.authService.getProfile(
       user.id,
+      user.account_type,
+      user.matrimonial_id,
     );
   }
 // =========================================================
@@ -157,6 +159,8 @@ async changeMyPassword(
     user.id,
     body.currentPassword,
     body.newPassword,
+    user.account_type,
+    user.matrimonial_id,
   );
 }
 }

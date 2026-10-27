@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import {
@@ -174,15 +175,20 @@ export class MatrimonialUsersService {
     );
 
     console.log(
-      'Received matrimonial data:',
-      data,
-    );
-
-    console.log(
       'Received photo:',
       photo?.filename || 'No photo',
     );
 
+    const password =
+      typeof data?.password === 'string'
+        ? data.password.trim()
+        : '';
+
+    if (password.length < 6) {
+      throw new BadRequestException(
+        'A password with at least 6 characters is required.',
+      );
+    }
 
     // -------------------------------------------------------
     // MEMBER ID
@@ -347,8 +353,23 @@ export class MatrimonialUsersService {
     // FAMILY DETAILS
     // -------------------------------------------------------
 
+    const fatherName =
+      typeof data?.father_name === 'string'
+        ? data.father_name.trim()
+        : '';
+    const memberFatherName =
+      typeof member.father_name === 'string'
+        ? member.father_name.trim()
+        : '';
+
     user.father_name =
-      data?.father_name || null;
+      fatherName || memberFatherName;
+
+    if (!user.father_name) {
+      throw new BadRequestException(
+        'Father\'s Name is required.',
+      );
+    }
 
     user.mother_name =
       data?.mother_name || null;
@@ -624,19 +645,6 @@ export class MatrimonialUsersService {
     // =======================================================
     // PASSWORD
     // =======================================================
-
-    let password =
-      data?.password
-        ? String(data.password).trim()
-        : '';
-
-
-    if (!password) {
-
-      password =
-        `${member.member_id}_${Date.now()}`;
-    }
-
 
     user.password =
       await bcrypt.hash(
@@ -1157,9 +1165,12 @@ export class MatrimonialUsersService {
               });
 
 
+            const { password: _password, ...safeMatrimonial } =
+              matrimonial;
+
             return {
 
-              ...matrimonial,
+              ...safeMatrimonial,
 
 
               // ------------------------------------------------
@@ -1299,6 +1310,37 @@ export class MatrimonialUsersService {
   // UPDATE
   // =========================================================
 
+  async updateOwnProfile(
+    id: number,
+    data: any,
+    photo: Express.Multer.File | undefined,
+    user: {
+      account_type?: string;
+      matrimonial_id?: number;
+    },
+  ) {
+    if (
+      user.account_type !== 'matrimonial' ||
+      user.matrimonial_id !== id
+    ) {
+      throw new ForbiddenException(
+        'You can only edit your own matrimonial profile.',
+      );
+    }
+
+    if (
+      typeof data?.password === 'string' &&
+      data.password.trim() !== '' &&
+      data.password.trim().length < 6
+    ) {
+      throw new BadRequestException(
+        'Password must contain at least 6 characters.',
+      );
+    }
+
+    return this.update(id, data, photo);
+  }
+
   async update(
     id: number,
     data: any,
@@ -1312,11 +1354,6 @@ export class MatrimonialUsersService {
     console.log(
       'Matrimonial ID:',
       id,
-    );
-
-    console.log(
-      'Received update data:',
-      data,
     );
 
     console.log(
@@ -1391,8 +1428,18 @@ export class MatrimonialUsersService {
       data?.father_name !== undefined
     ) {
 
-      matrimonial.father_name =
-        data.father_name;
+      const fatherName =
+        typeof data.father_name === 'string'
+          ? data.father_name.trim()
+          : '';
+
+      if (!fatherName) {
+        throw new BadRequestException(
+          'Father\'s Name is required.',
+        );
+      }
+
+      matrimonial.father_name = fatherName;
     }
 
 
@@ -1903,6 +1950,8 @@ export class MatrimonialUsersService {
         await this.userRepository.save(
           matrimonial,
         );
+      const { password: _password, ...safeUpdatedUser } =
+        updatedUser;
 
 
       console.log(
@@ -1939,7 +1988,7 @@ export class MatrimonialUsersService {
 
         data: {
 
-          ...updatedUser,
+          ...safeUpdatedUser,
 
 
           // -------------------------------------------------

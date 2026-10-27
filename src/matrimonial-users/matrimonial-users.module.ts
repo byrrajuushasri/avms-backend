@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MatrimonialUsersController } from './matrimonial-users.controller';
 import { MatrimonialUsersService } from './matrimonial-users.service';
+import { MatrimonialProfileOwnerGuard } from './matrimonial-profile-owner.guard';
 
 import { MatrimonialUser } from './entities/matrimonial-user.entity';
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
@@ -25,6 +26,7 @@ import { EmailModule } from '../email/email.module';
 
   providers: [
     MatrimonialUsersService,
+    MatrimonialProfileOwnerGuard,
   ],
 
   exports: [
