@@ -28,9 +28,7 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException(
-        'Email already exists',
-      );
+      throw new ConflictException('Email already exists');
     }
 
     const user = this.userRepository.create({
@@ -41,8 +39,7 @@ export class UsersService {
       status: createUserDto.status,
     });
 
-    const savedUser =
-      await this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
 
     return {
       message: 'User added successfully',
@@ -78,9 +75,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        'User not found',
-      );
+      throw new NotFoundException('User not found');
     }
 
     return user;
@@ -89,10 +84,7 @@ export class UsersService {
   // =========================
   // UPDATE USER
   // =========================
-  async update(
-    id: number,
-    updateUserDto: CreateUserDto,
-  ) {
+  async update(id: number, updateUserDto: CreateUserDto) {
     const user = await this.userRepository.findOne({
       where: {
         id,
@@ -100,27 +92,19 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        'User not found',
-      );
+      throw new NotFoundException('User not found');
     }
 
     // Check whether another user already
     // has this email
-    const existingUser =
-      await this.userRepository.findOne({
-        where: {
-          email: updateUserDto.email,
-        },
-      });
+    const existingUser = await this.userRepository.findOne({
+      where: {
+        email: updateUserDto.email,
+      },
+    });
 
-    if (
-      existingUser &&
-      existingUser.id !== id
-    ) {
-      throw new ConflictException(
-        'Email already exists',
-      );
+    if (existingUser && existingUser.id !== id) {
+      throw new ConflictException('Email already exists');
     }
 
     // Update fields
@@ -130,8 +114,7 @@ export class UsersService {
     user.userType = updateUserDto.userType;
     user.status = updateUserDto.status;
 
-    const updatedUser =
-      await this.userRepository.save(user);
+    const updatedUser = await this.userRepository.save(user);
 
     return {
       message: 'User updated successfully',

@@ -8,23 +8,12 @@ import { Membership } from './entity/membership.entity';
 import { Member } from '../members/entity/member.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Membership,
-      Member,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Membership, Member])],
 
-  controllers: [
-    MembershipController,
-  ],
+  controllers: [MembershipController],
 
-  providers: [
-    MembershipService,
-  ],
+  providers: [MembershipService],
 
-  exports: [
-    MembershipService,
-  ],
+  exports: [MembershipService],
 })
 export class MembershipModule {}

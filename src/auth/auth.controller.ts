@@ -8,30 +8,28 @@ import {
   Post,
   Req,
   UseGuards,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
-import type { Request } from "express";
+import type { Request } from 'express';
 
-import { AuthService } from "./auth.service";
+import { AuthService } from './auth.service';
 
-import { JwtAuthGuard } from "./jwt-auth.guard";
+import { JwtAuthGuard } from './jwt-auth.guard';
 
-import { Roles } from "./roles.decorator";
+import { Roles } from './roles.decorator';
 
-import { RolesGuard } from "./roles.guard";
+import { RolesGuard } from './roles.guard';
 
-@Controller("auth")
+@Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   // =========================================================
   // LOGIN
   // POST /auth/login
   // =========================================================
 
-  @Post("login")
+  @Post('login')
   async login(
     @Body()
     body: {
@@ -39,10 +37,7 @@ export class AuthController {
       password: string;
     },
   ) {
-    return this.authService.login(
-      body.login,
-      body.password,
-    );
+    return this.authService.login(body.login, body.password);
   }
 
   // =========================================================
@@ -50,7 +45,7 @@ export class AuthController {
   // GET /auth/me
   // =========================================================
 
-  @Get("me")
+  @Get('me')
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: Request) {
     const user = req.user as any;
@@ -61,40 +56,34 @@ export class AuthController {
       user.matrimonial_id,
     );
   }
-// =========================================================
-// FIRST SUPER ADMIN PASSWORD BOOTSTRAP
-// TEMPORARY - REMOVE AFTER FIRST PASSWORD IS CREATED
-// PATCH /auth/bootstrap-password/1
-// =========================================================
+  // =========================================================
+  // FIRST SUPER ADMIN PASSWORD BOOTSTRAP
+  // TEMPORARY - REMOVE AFTER FIRST PASSWORD IS CREATED
+  // PATCH /auth/bootstrap-password/1
+  // =========================================================
 
-@Patch("bootstrap-password/:id")
-async bootstrapPassword(
-  @Param("id", ParseIntPipe) id: number,
+  @Patch('bootstrap-password/:id')
+  async bootstrapPassword(
+    @Param('id', ParseIntPipe) id: number,
 
-  @Body()
-  body: {
-    password: string;
-  },
-) {
-  return this.authService.bootstrapPassword(
-    id,
-    body.password,
-  );
-}
+    @Body()
+    body: {
+      password: string;
+    },
+  ) {
+    return this.authService.bootstrapPassword(id, body.password);
+  }
   // =========================================================
   // SUPER ADMIN CREATE PASSWORD
   //
   // PATCH /auth/members/25/password
   // =========================================================
 
-  @Patch("members/:id/password")
-  @UseGuards(
-    JwtAuthGuard,
-    RolesGuard,
-  )
-  @Roles("super_admin")
+  @Patch('members/:id/password')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   async createPassword(
-    @Param("id", ParseIntPipe)
+    @Param('id', ParseIntPipe)
     id: number,
 
     @Body()
@@ -102,10 +91,7 @@ async bootstrapPassword(
       password: string;
     },
   ) {
-    return this.authService.createPassword(
-      id,
-      body.password,
-    );
+    return this.authService.createPassword(id, body.password);
   }
 
   // =========================================================
@@ -114,14 +100,11 @@ async bootstrapPassword(
   // PATCH /auth/members/25/role
   // =========================================================
 
-  @Patch("members/:id/role")
-  @UseGuards(
-    JwtAuthGuard,
-    RolesGuard,
-  )
-  @Roles("super_admin")
+  @Patch('members/:id/role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   async updateRole(
-    @Param("id", ParseIntPipe)
+    @Param('id', ParseIntPipe)
     id: number,
 
     @Body()
@@ -129,38 +112,34 @@ async bootstrapPassword(
       role: string;
     },
   ) {
-    return this.authService.updateRole(
-      id,
-      body.role,
-    );
+    return this.authService.updateRole(id, body.role);
   }
 
-
   // =========================================================
-// LOGGED-IN USER CHANGE OWN PASSWORD
-//
-// PATCH /auth/change-password
-// =========================================================
+  // LOGGED-IN USER CHANGE OWN PASSWORD
+  //
+  // PATCH /auth/change-password
+  // =========================================================
 
-@Patch("change-password")
-@UseGuards(JwtAuthGuard)
-async changeMyPassword(
-  @Req() req: Request,
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changeMyPassword(
+    @Req() req: Request,
 
-  @Body()
-  body: {
-    currentPassword: string;
-    newPassword: string;
-  },
-) {
-  const user = req.user as any;
+    @Body()
+    body: {
+      currentPassword: string;
+      newPassword: string;
+    },
+  ) {
+    const user = req.user as any;
 
-  return this.authService.changeMyPassword(
-    user.id,
-    body.currentPassword,
-    body.newPassword,
-    user.account_type,
-    user.matrimonial_id,
-  );
-}
+    return this.authService.changeMyPassword(
+      user.id,
+      body.currentPassword,
+      body.newPassword,
+      user.account_type,
+      user.matrimonial_id,
+    );
+  }
 }

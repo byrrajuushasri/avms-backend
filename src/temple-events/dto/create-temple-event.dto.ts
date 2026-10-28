@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-} from "class-validator";
+} from 'class-validator';
 
 export class CreateTempleEventDto {
   @IsString()

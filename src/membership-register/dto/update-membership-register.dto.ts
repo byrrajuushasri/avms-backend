@@ -1,9 +1,4 @@
-import {
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from "class-validator";
+import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateMembershipRegisterDto {
   @IsOptional()
@@ -34,7 +29,6 @@ export class UpdateMembershipRegisterDto {
   @IsString()
   occupation?: string;
 
-  
   @IsOptional()
   @IsString()
   gender?: string;
@@ -64,11 +58,11 @@ export class UpdateMembershipRegisterDto {
   sangham?: string;
 
   @IsOptional()
-  @IsIn(["Yes", "No"])
+  @IsIn(['Yes', 'No'])
   is_existing_mahashaba_member?: string;
 
   @IsOptional()
-  @IsIn(["Yes", "No"])
+  @IsIn(['Yes', 'No'])
   is_existing_sangam_member?: string;
 
   @IsOptional()

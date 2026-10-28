@@ -4,16 +4,16 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { JwtService } from "@nestjs/jwt";
-import * as bcrypt from "bcrypt";
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
-import { MembershipRegister } from "../membership-register/entities/membership-register.entity";
-import { MatrimonialUser } from "../matrimonial-users/entities/matrimonial-user.entity";
+import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
+import { MatrimonialUser } from '../matrimonial-users/entities/matrimonial-user.entity';
 
 @Injectable()
 export class AuthService {
@@ -31,14 +31,9 @@ export class AuthService {
   // LOGIN
   // =========================================================
 
-  async login(
-    login: string,
-    password: string,
-  ) {
+  async login(login: string, password: string) {
     if (!login || !password) {
-      throw new BadRequestException(
-        "Email/Mobile and password are required",
-      );
+      throw new BadRequestException('Email/Mobile and password are required');
     }
 
     const normalizedLogin = login.trim();
@@ -52,17 +47,14 @@ export class AuthService {
     });
 
     if (!member) {
-      throw new UnauthorizedException(
-        "Invalid email/mobile or password",
-      );
+      throw new UnauthorizedException('Invalid email/mobile or password');
     }
 
-    const matrimonialProfile =
-      await this.matrimonialRepository.findOne({
-        where: {
-          member_id: member.member_id,
-        },
-      });
+    const matrimonialProfile = await this.matrimonialRepository.findOne({
+      where: {
+        member_id: member.member_id,
+      },
+    });
 
     if (matrimonialProfile?.password) {
       const matrimonialPasswordValid = await bcrypt.compare(
@@ -72,11 +64,10 @@ export class AuthService {
 
       if (matrimonialPasswordValid) {
         if (
-          String(matrimonialProfile.status).trim().toLowerCase() !==
-          "approved"
+          String(matrimonialProfile.status).trim().toLowerCase() !== 'approved'
         ) {
           throw new ForbiddenException(
-            "Your matrimonial profile is awaiting administrator approval. We will email you when it is approved.",
+            'Your matrimonial profile is awaiting administrator approval. We will email you when it is approved.',
           );
         }
 
@@ -85,9 +76,10 @@ export class AuthService {
           id: member.id,
           member_id: member.member_id,
           email: member.email,
-          role: "user",
-          account_type: "matrimonial",
+          role: 'user',
+          account_type: 'matrimonial',
           matrimonial_id: matrimonialProfile.id,
+          gender: member.gender,
           district: member.district,
           mandal: member.mandal,
           sangham: member.sangham,
@@ -96,19 +88,20 @@ export class AuthService {
         const { password: _password, ...safeProfile } = matrimonialProfile;
 
         return {
-          message: "Login successful",
+          message: 'Login successful',
           access_token,
-          token_type: "Bearer",
-          expires_in: "1d",
+          token_type: 'Bearer',
+          expires_in: '1d',
           user: {
             id: member.id,
             member_id: member.member_id,
             full_name: member.full_name,
             email: member.email,
             mobile: member.mobile,
-            role: "user",
-            account_type: "matrimonial",
+            role: 'user',
+            account_type: 'matrimonial',
             matrimonial_id: matrimonialProfile.id,
+            gender: member.gender,
             matrimonial_status: matrimonialProfile.status,
             district: member.district,
             mandal: member.mandal,
@@ -123,20 +116,15 @@ export class AuthService {
     // Member does not have password yet
     if (!member.password) {
       throw new UnauthorizedException(
-        "Password has not been created for this account. Please contact administrator.",
+        'Password has not been created for this account. Please contact administrator.',
       );
     }
 
     // Compare password with bcrypt hash
-    const passwordValid = await bcrypt.compare(
-      password,
-      member.password,
-    );
+    const passwordValid = await bcrypt.compare(password, member.password);
 
     if (!passwordValid) {
-      throw new UnauthorizedException(
-        "Invalid email/mobile or password",
-      );
+      throw new UnauthorizedException('Invalid email/mobile or password');
     }
 
     // =======================================================
@@ -152,7 +140,9 @@ export class AuthService {
 
       email: member.email,
 
-      role: member.role || "user",
+      role: member.role || 'user',
+
+      gender: member.gender,
 
       district: member.district,
 
@@ -161,18 +151,17 @@ export class AuthService {
       sangham: member.sangham,
     };
 
-    const access_token =
-      await this.jwtService.signAsync(payload);
+    const access_token = await this.jwtService.signAsync(payload);
 
     // Never return password
     return {
-      message: "Login successful",
+      message: 'Login successful',
 
       access_token,
 
-      token_type: "Bearer",
+      token_type: 'Bearer',
 
-      expires_in: "1d",
+      expires_in: '1d',
 
       user: {
         id: member.id,
@@ -185,7 +174,9 @@ export class AuthService {
 
         mobile: member.mobile,
 
-        role: member.role || "user",
+        gender: member.gender,
+
+        role: member.role || 'user',
 
         district: member.district,
 
@@ -195,7 +186,7 @@ export class AuthService {
 
         photo: member.photo,
 
-        account_type: "member",
+        account_type: 'member',
       },
     };
   }
@@ -205,130 +196,103 @@ export class AuthService {
   // SUPER ADMIN USES THIS
   // =========================================================
 
-  async createPassword(
-    memberId: number,
-    password: string,
-  ) {
+  async createPassword(memberId: number, password: string) {
     if (!password || password.length < 6) {
       throw new BadRequestException(
-        "Password must contain at least 6 characters",
+        'Password must contain at least 6 characters',
       );
     }
 
-    const member =
-      await this.memberRepository.findOne({
-        where: {
-          id: memberId,
-        },
-      });
+    const member = await this.memberRepository.findOne({
+      where: {
+        id: memberId,
+      },
+    });
 
     if (!member) {
-      throw new NotFoundException(
-        "Member not found",
-      );
+      throw new NotFoundException('Member not found');
     }
 
-    const hashedPassword =
-      await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     member.password = hashedPassword;
 
     await this.memberRepository.save(member);
 
     return {
-      message:
-        "Password created successfully",
+      message: 'Password created successfully',
       member_id: member.member_id,
     };
   }
 
-
-
-
   // =========================================================
-// FIRST SUPER ADMIN PASSWORD BOOTSTRAP
-// TEMPORARY
-// =========================================================
+  // FIRST SUPER ADMIN PASSWORD BOOTSTRAP
+  // TEMPORARY
+  // =========================================================
 
-async bootstrapPassword(
-  memberId: number,
-  password: string,
-) {
-  if (!password || password.length < 6) {
-    throw new BadRequestException(
-      "Password must contain at least 6 characters",
-    );
-  }
+  async bootstrapPassword(memberId: number, password: string) {
+    if (!password || password.length < 6) {
+      throw new BadRequestException(
+        'Password must contain at least 6 characters',
+      );
+    }
 
-  const member =
-    await this.memberRepository.findOne({
+    const member = await this.memberRepository.findOne({
       where: {
         id: memberId,
       },
     });
 
-  if (!member) {
-    throw new NotFoundException(
-      "Member not found",
-    );
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    // Only allow this for super_admin
+    if (member.role !== 'super_admin') {
+      throw new UnauthorizedException(
+        'Only Super Admin account can use bootstrap password setup',
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    member.password = hashedPassword;
+
+    await this.memberRepository.save(member);
+
+    return {
+      message: 'Super Admin password created successfully',
+      member_id: member.member_id,
+      role: member.role,
+    };
   }
-
-  // Only allow this for super_admin
-  if (member.role !== "super_admin") {
-    throw new UnauthorizedException(
-      "Only Super Admin account can use bootstrap password setup",
-    );
-  }
-
-  const hashedPassword =
-    await bcrypt.hash(password, 12);
-
-  member.password = hashedPassword;
-
-  await this.memberRepository.save(member);
-
-  return {
-    message:
-      "Super Admin password created successfully",
-    member_id: member.member_id,
-    role: member.role,
-  };
-}
   // =========================================================
   // CHANGE MEMBER ROLE
   // SUPER ADMIN USES THIS
   // =========================================================
 
-  async updateRole(
-    memberId: number,
-    role: string,
-  ) {
+  async updateRole(memberId: number, role: string) {
     const allowedRoles = [
-      "super_admin",
-      "state_admin",
-      "district_admin",
-      "mandal_admin",
-      "sangam_admin",
-      "user",
+      'super_admin',
+      'state_admin',
+      'district_admin',
+      'mandal_admin',
+      'sangam_admin',
+      'user',
     ];
 
     if (!allowedRoles.includes(role)) {
-      throw new BadRequestException(
-        "Invalid role",
-      );
+      throw new BadRequestException('Invalid role');
     }
 
-    const member =
-      await this.memberRepository.findOne({
-        where: {
-          id: memberId,
-        },
-      });
+    const member = await this.memberRepository.findOne({
+      where: {
+        id: memberId,
+      },
+    });
 
     if (!member) {
-      throw new NotFoundException(
-        "Member not found",
-      );
+      throw new NotFoundException('Member not found');
     }
 
     member.role = role;
@@ -336,7 +300,7 @@ async bootstrapPassword(
     await this.memberRepository.save(member);
 
     return {
-      message: "Role updated successfully",
+      message: 'Role updated successfully',
 
       member: {
         id: member.id,
@@ -362,20 +326,17 @@ async bootstrapPassword(
 
   async getProfile(
     userId: number,
-    accountType = "member",
+    accountType = 'member',
     matrimonialId?: number,
   ) {
-    const member =
-      await this.memberRepository.findOne({
-        where: {
-          id: userId,
-        },
-      });
+    const member = await this.memberRepository.findOne({
+      where: {
+        id: userId,
+      },
+    });
 
     if (!member) {
-      throw new UnauthorizedException(
-        "User not found",
-      );
+      throw new UnauthorizedException('User not found');
     }
 
     const profile = {
@@ -389,7 +350,9 @@ async bootstrapPassword(
 
       mobile: member.mobile,
 
-      role: member.role || "user",
+      gender: member.gender,
+
+      role: member.role || 'user',
 
       district: member.district,
 
@@ -400,25 +363,22 @@ async bootstrapPassword(
       photo: member.photo,
     };
 
-    if (accountType !== "matrimonial" || !matrimonialId) {
+    if (accountType !== 'matrimonial' || !matrimonialId) {
       return {
         ...profile,
-        account_type: "member",
+        account_type: 'member',
       };
     }
 
-    const matrimonialProfile =
-      await this.matrimonialRepository.findOne({
-        where: {
-          id: matrimonialId,
-          member_id: member.member_id,
-        },
-      });
+    const matrimonialProfile = await this.matrimonialRepository.findOne({
+      where: {
+        id: matrimonialId,
+        member_id: member.member_id,
+      },
+    });
 
     if (!matrimonialProfile) {
-      throw new UnauthorizedException(
-        "Matrimonial profile not found",
-      );
+      throw new UnauthorizedException('Matrimonial profile not found');
     }
 
     const { password: _password, ...safeMatrimonialProfile } =
@@ -426,104 +386,95 @@ async bootstrapPassword(
 
     return {
       ...profile,
-      account_type: "matrimonial",
+      account_type: 'matrimonial',
       matrimonial_id: matrimonialProfile.id,
       matrimonial_profile: safeMatrimonialProfile,
     };
   }
 
-// =========================================================
-// CHANGE OWN PASSWORD
-// LOGGED-IN USER
-// =========================================================
+  // =========================================================
+  // CHANGE OWN PASSWORD
+  // LOGGED-IN USER
+  // =========================================================
 
-async changeMyPassword(
-  userId: number,
-  currentPassword: string,
-  newPassword: string,
-  accountType = "member",
-  matrimonialId?: number,
-) {
-  if (!currentPassword || !newPassword) {
-    throw new BadRequestException(
-      "Current password and new password are required",
-    );
-  }
+  async changeMyPassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+    accountType = 'member',
+    matrimonialId?: number,
+  ) {
+    if (!currentPassword || !newPassword) {
+      throw new BadRequestException(
+        'Current password and new password are required',
+      );
+    }
 
-  if (newPassword.length < 6) {
-    throw new BadRequestException(
-      "New password must contain at least 6 characters",
-    );
-  }
+    if (newPassword.length < 6) {
+      throw new BadRequestException(
+        'New password must contain at least 6 characters',
+      );
+    }
 
-  const account =
-    accountType === "matrimonial" && matrimonialId
-      ? await this.matrimonialRepository.findOne({
-          where: {
-            id: matrimonialId,
-          },
-        })
-      : await this.memberRepository.findOne({
-          where: {
-            id: userId,
-          },
-        });
+    const account =
+      accountType === 'matrimonial' && matrimonialId
+        ? await this.matrimonialRepository.findOne({
+            where: {
+              id: matrimonialId,
+            },
+          })
+        : await this.memberRepository.findOne({
+            where: {
+              id: userId,
+            },
+          });
 
-  if (!account) {
-    throw new NotFoundException("User not found");
-  }
+    if (!account) {
+      throw new NotFoundException('User not found');
+    }
 
-  if (!account.password) {
-    throw new BadRequestException(
-      "Password has not been created for this account",
-    );
-  }
+    if (!account.password) {
+      throw new BadRequestException(
+        'Password has not been created for this account',
+      );
+    }
 
-  // Verify current password
-  const passwordValid =
-    await bcrypt.compare(
+    // Verify current password
+    const passwordValid = await bcrypt.compare(
       currentPassword,
       account.password,
     );
 
-  if (!passwordValid) {
-    throw new UnauthorizedException(
-      "Current password is incorrect",
-    );
+    if (!passwordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Prevent using same password
+    const samePassword = await bcrypt.compare(newPassword, account.password);
+
+    if (samePassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    if (accountType === 'matrimonial' && matrimonialId) {
+      await this.matrimonialRepository.update(
+        { id: matrimonialId },
+        { password: hashedPassword },
+      );
+    } else {
+      await this.memberRepository.update(
+        { id: userId },
+        { password: hashedPassword },
+      );
+    }
+
+    return {
+      message: 'Password updated successfully',
+    };
   }
-
-  // Prevent using same password
-  const samePassword =
-    await bcrypt.compare(
-      newPassword,
-      account.password,
-    );
-
-  if (samePassword) {
-    throw new BadRequestException(
-      "New password must be different from current password",
-    );
-  }
-
-  // Hash new password
-  const hashedPassword =
-    await bcrypt.hash(newPassword, 12);
-
-  if (accountType === "matrimonial" && matrimonialId) {
-    await this.matrimonialRepository.update(
-      { id: matrimonialId },
-      { password: hashedPassword },
-    );
-  } else {
-    await this.memberRepository.update(
-      { id: userId },
-      { password: hashedPassword },
-    );
-  }
-
-  return {
-    message: "Password updated successfully",
-  };
-}
-
 }

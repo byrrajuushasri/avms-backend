@@ -4,79 +4,79 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm';
 
-@Entity("news")
+@Entity('news')
 export class News {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({
-    type: "varchar",
+    type: 'varchar',
     length: 255,
   })
   title: string;
 
   @Column({
-    type: "text",
+    type: 'text',
   })
   description: string;
 
   @Column({
-    type: "varchar",
+    type: 'varchar',
     length: 50,
   })
   category: string;
 
   @Column({
-    type: "varchar",
+    type: 'varchar',
     length: 150,
     nullable: true,
   })
   location: string | null;
 
   @Column({
-    type: "date",
+    type: 'date',
   })
   date: string;
 
   @Column({
-    name: "media_type",
-    type: "varchar",
+    name: 'media_type',
+    type: 'varchar',
     length: 20,
   })
   mediaType: string;
 
   @Column({
-    name: "media_url",
-    type: "varchar",
+    name: 'media_url',
+    type: 'varchar',
     length: 500,
     nullable: true,
   })
   mediaUrl: string | null;
 
   @Column({
-    type: "boolean",
+    type: 'boolean',
     default: false,
   })
   featured: boolean;
 
   @Column({
-    type: "varchar",
+    type: 'varchar',
     length: 20,
-    default: "Active",
+    default: 'Active',
   })
   status: string;
 
   @CreateDateColumn({
-    name: "created_at",
-    type: "datetime",
+    name: 'created_at',
+    type: 'datetime',
   })
   createdAt: Date;
 
   @UpdateDateColumn({
-    name: "updated_at",
-    type: "datetime",
+    name: 'updated_at',
+    type: 'datetime',
   })
   updatedAt: Date;
 }

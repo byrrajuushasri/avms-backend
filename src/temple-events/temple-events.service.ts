@@ -1,13 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { TempleEvent } from "./entities/temple-event.entity";
-import { CreateTempleEventDto } from "./dto/create-temple-event.dto";
+import { TempleEvent } from './entities/temple-event.entity';
+import { CreateTempleEventDto } from './dto/create-temple-event.dto';
 
 @Injectable()
 export class TempleEventsService {
@@ -17,14 +14,10 @@ export class TempleEventsService {
   ) {}
 
   async create(dto: CreateTempleEventDto) {
-    const event =
-      this.templeEventRepository.create({
-        ...dto,
-        status:
-          dto.status !== undefined
-            ? dto.status
-            : true,
-      });
+    const event = this.templeEventRepository.create({
+      ...dto,
+      status: dto.status !== undefined ? dto.status : true,
+    });
 
     return this.templeEventRepository.save(event);
   }
@@ -35,7 +28,7 @@ export class TempleEventsService {
         status: true,
       },
       order: {
-        date: "ASC",
+        date: 'ASC',
       },
     });
   }
@@ -43,30 +36,24 @@ export class TempleEventsService {
   async findAllAdmin() {
     return this.templeEventRepository.find({
       order: {
-        date: "ASC",
+        date: 'ASC',
       },
     });
   }
 
   async findOne(id: number) {
-    const event =
-      await this.templeEventRepository.findOne({
-        where: { id },
-      });
+    const event = await this.templeEventRepository.findOne({
+      where: { id },
+    });
 
     if (!event) {
-      throw new NotFoundException(
-        `Temple event with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Temple event with ID ${id} not found`);
     }
 
     return event;
   }
 
-  async update(
-    id: number,
-    dto: Partial<CreateTempleEventDto>,
-  ) {
+  async update(id: number, dto: Partial<CreateTempleEventDto>) {
     const event = await this.findOne(id);
 
     Object.assign(event, dto);
@@ -80,7 +67,7 @@ export class TempleEventsService {
     await this.templeEventRepository.remove(event);
 
     return {
-      message: "Temple event deleted successfully",
+      message: 'Temple event deleted successfully',
     };
   }
 }

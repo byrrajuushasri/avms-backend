@@ -14,9 +14,7 @@ import { LocationType } from './entities/location.entity';
 
 @Controller('locations')
 export class LocationsController {
-  constructor(
-    private readonly locationsService: LocationsService,
-  ) {}
+  constructor(private readonly locationsService: LocationsService) {}
 
   // =========================================================
   // DISTRICTS
@@ -36,9 +34,7 @@ export class LocationsController {
     @Param('districtId', ParseIntPipe)
     districtId: number,
   ) {
-    return this.locationsService.findMandalsByDistrict(
-      districtId,
-    );
+    return this.locationsService.findMandalsByDistrict(districtId);
   }
 
   // =========================================================
@@ -50,9 +46,7 @@ export class LocationsController {
     @Param('mandalId', ParseIntPipe)
     mandalId: number,
   ) {
-    return this.locationsService.findSanghamsByMandal(
-      mandalId,
-    );
+    return this.locationsService.findSanghamsByMandal(mandalId);
   }
 
   // =========================================================

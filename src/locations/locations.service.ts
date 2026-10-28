@@ -7,10 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import {
-  Location,
-  LocationType,
-} from './entities/location.entity';
+import { Location, LocationType } from './entities/location.entity';
 
 @Injectable()
 export class LocationsService {
@@ -49,9 +46,7 @@ export class LocationsService {
     });
 
     if (!district) {
-      throw new NotFoundException(
-        `District with ID ${districtId} not found`,
-      );
+      throw new NotFoundException(`District with ID ${districtId} not found`);
     }
 
     return this.locationRepository.find({
@@ -79,9 +74,7 @@ export class LocationsService {
     });
 
     if (!mandal) {
-      throw new NotFoundException(
-        `Mandal with ID ${mandalId} not found`,
-      );
+      throw new NotFoundException(`Mandal with ID ${mandalId} not found`);
     }
 
     return this.locationRepository.find({
@@ -106,9 +99,7 @@ export class LocationsService {
     });
 
     if (!location) {
-      throw new NotFoundException(
-        `Location with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Location with ID ${id} not found`);
     }
 
     return location;
@@ -127,71 +118,51 @@ export class LocationsService {
     const name = data.name?.trim();
 
     if (!name) {
-      throw new BadRequestException(
-        'Location name is required',
-      );
+      throw new BadRequestException('Location name is required');
     }
 
     // District must not have parent
-    if (
-      data.type === LocationType.DISTRICT &&
-      data.parent_id
-    ) {
-      throw new BadRequestException(
-        'District cannot have parent_id',
-      );
+    if (data.type === LocationType.DISTRICT && data.parent_id) {
+      throw new BadRequestException('District cannot have parent_id');
     }
 
     // Mandal and Sangham must have parent
-    if (
-      data.type !== LocationType.DISTRICT &&
-      !data.parent_id
-    ) {
-      throw new BadRequestException(
-        'parent_id is required',
-      );
+    if (data.type !== LocationType.DISTRICT && !data.parent_id) {
+      throw new BadRequestException('parent_id is required');
     }
 
     // Validate parent
     if (data.parent_id) {
-      const parent =
-        await this.locationRepository.findOne({
-          where: {
-            id: data.parent_id,
-          },
-        });
+      const parent = await this.locationRepository.findOne({
+        where: {
+          id: data.parent_id,
+        },
+      });
 
       if (!parent) {
-        throw new NotFoundException(
-          'Parent location not found',
-        );
+        throw new NotFoundException('Parent location not found');
       }
 
       if (
         data.type === LocationType.MANDAL &&
         parent.type !== LocationType.DISTRICT
       ) {
-        throw new BadRequestException(
-          'Mandal parent must be a district',
-        );
+        throw new BadRequestException('Mandal parent must be a district');
       }
 
       if (
         data.type === LocationType.SANGHAM &&
         parent.type !== LocationType.MANDAL
       ) {
-        throw new BadRequestException(
-          'Sangham parent must be a mandal',
-        );
+        throw new BadRequestException('Sangham parent must be a mandal');
       }
     }
 
-    const location =
-      this.locationRepository.create({
-        name,
-        type: data.type,
-        parent_id: data.parent_id ?? null,
-      });
+    const location = this.locationRepository.create({
+      name,
+      type: data.type,
+      parent_id: data.parent_id ?? null,
+    });
 
     return this.locationRepository.save(location);
   }

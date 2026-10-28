@@ -9,28 +9,20 @@ import {
   UploadedFile,
   UseInterceptors,
   ParseIntPipe,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
-import {
-  FileInterceptor,
-} from "@nestjs/platform-express";
+import { FileInterceptor } from '@nestjs/platform-express';
 
-import {
-  diskStorage,
-} from "multer";
+import { diskStorage } from 'multer';
 
-import {
-  extname,
-} from "path";
+import { extname } from 'path';
 
-import { NewsService } from "./news.service";
-import { CreateNewsDto } from "./dto/create-news.dto";
+import { NewsService } from './news.service';
+import { CreateNewsDto } from './dto/create-news.dto';
 
-@Controller("news")
+@Controller('news')
 export class NewsController {
-  constructor(
-    private readonly newsService: NewsService,
-  ) {}
+  constructor(private readonly newsService: NewsService) {}
 
   // =========================================================
   // CREATE
@@ -38,62 +30,36 @@ export class NewsController {
 
   @Post()
   @UseInterceptors(
-    FileInterceptor("media", {
+    FileInterceptor('media', {
       storage: diskStorage({
-        destination:
-          "./uploads/news",
+        destination: './uploads/news',
 
-        filename: (
-          req,
-          file,
-          callback,
-        ) => {
-          const uniqueName =
-            `${Date.now()}-${Math.round(
-              Math.random() * 1e9,
-            )}${extname(
-              file.originalname,
-            )}`;
+        filename: (req, file, callback) => {
+          const uniqueName = `${Date.now()}-${Math.round(
+            Math.random() * 1e9,
+          )}${extname(file.originalname)}`;
 
-          callback(
-            null,
-            uniqueName,
-          );
+          callback(null, uniqueName);
         },
       }),
 
       limits: {
-        fileSize:
-          10 * 1024 * 1024,
+        fileSize: 10 * 1024 * 1024,
       },
 
-      fileFilter: (
-        req,
-        file,
-        callback,
-      ) => {
-        const allowedTypes =
-          [
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/gif",
-          ];
+      fileFilter: (req, file, callback) => {
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'image/gif',
+        ];
 
-        if (
-          allowedTypes.includes(
-            file.mimetype,
-          )
-        ) {
-          callback(
-            null,
-            true,
-          );
+        if (allowedTypes.includes(file.mimetype)) {
+          callback(null, true);
         } else {
           callback(
-            new Error(
-              "Only JPG, PNG, WEBP and GIF images are allowed.",
-            ),
+            new Error('Only JPG, PNG, WEBP and GIF images are allowed.'),
             false,
           );
         }
@@ -106,10 +72,7 @@ export class NewsController {
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
-    return this.newsService.create(
-      createNewsDto,
-      file,
-    );
+    return this.newsService.create(createNewsDto, file);
   }
 
   // =========================================================
@@ -125,12 +88,9 @@ export class NewsController {
   // GET ONE
   // =========================================================
 
-  @Get(":id")
+  @Get(':id')
   async findOne(
-    @Param(
-      "id",
-      ParseIntPipe,
-    )
+    @Param('id', ParseIntPipe)
     id: number,
   ) {
     return this.newsService.findOne(id);
@@ -140,64 +100,38 @@ export class NewsController {
   // UPDATE
   // =========================================================
 
-  @Patch(":id")
+  @Patch(':id')
   @UseInterceptors(
-    FileInterceptor("media", {
+    FileInterceptor('media', {
       storage: diskStorage({
-        destination:
-          "./uploads/news",
+        destination: './uploads/news',
 
-        filename: (
-          req,
-          file,
-          callback,
-        ) => {
-          const uniqueName =
-            `${Date.now()}-${Math.round(
-              Math.random() * 1e9,
-            )}${extname(
-              file.originalname,
-            )}`;
+        filename: (req, file, callback) => {
+          const uniqueName = `${Date.now()}-${Math.round(
+            Math.random() * 1e9,
+          )}${extname(file.originalname)}`;
 
-          callback(
-            null,
-            uniqueName,
-          );
+          callback(null, uniqueName);
         },
       }),
 
       limits: {
-        fileSize:
-          10 * 1024 * 1024,
+        fileSize: 10 * 1024 * 1024,
       },
 
-      fileFilter: (
-        req,
-        file,
-        callback,
-      ) => {
-        const allowedTypes =
-          [
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/gif",
-          ];
+      fileFilter: (req, file, callback) => {
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'image/gif',
+        ];
 
-        if (
-          allowedTypes.includes(
-            file.mimetype,
-          )
-        ) {
-          callback(
-            null,
-            true,
-          );
+        if (allowedTypes.includes(file.mimetype)) {
+          callback(null, true);
         } else {
           callback(
-            new Error(
-              "Only JPG, PNG, WEBP and GIF images are allowed.",
-            ),
+            new Error('Only JPG, PNG, WEBP and GIF images are allowed.'),
             false,
           );
         }
@@ -205,10 +139,7 @@ export class NewsController {
     }),
   )
   async update(
-    @Param(
-      "id",
-      ParseIntPipe,
-    )
+    @Param('id', ParseIntPipe)
     id: number,
 
     @Body()
@@ -217,23 +148,16 @@ export class NewsController {
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
-    return this.newsService.update(
-      id,
-      createNewsDto,
-      file,
-    );
+    return this.newsService.update(id, createNewsDto, file);
   }
 
   // =========================================================
   // DELETE
   // =========================================================
 
-  @Delete(":id")
+  @Delete(':id')
   async remove(
-    @Param(
-      "id",
-      ParseIntPipe,
-    )
+    @Param('id', ParseIntPipe)
     id: number,
   ) {
     return this.newsService.remove(id);

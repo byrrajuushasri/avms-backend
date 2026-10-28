@@ -6,20 +6,12 @@ import { LocationsController } from './locations.controller';
 import { LocationsService } from './locations.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Location]),
-  ],
+  imports: [TypeOrmModule.forFeature([Location])],
 
-  controllers: [
-    LocationsController,
-  ],
+  controllers: [LocationsController],
 
-  providers: [
-    LocationsService,
-  ],
+  providers: [LocationsService],
 
-  exports: [
-    LocationsService,
-  ],
+  exports: [LocationsService],
 })
 export class LocationsModule {}

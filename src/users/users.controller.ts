@@ -1,20 +1,11 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
@@ -32,13 +23,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateUserDto: CreateUserDto,
-  ) {
-    return this.usersService.update(
-      Number(id),
-      updateUserDto,
-    );
+  update(@Param('id') id: string, @Body() updateUserDto: CreateUserDto) {
+    return this.usersService.update(Number(id), updateUserDto);
   }
 }

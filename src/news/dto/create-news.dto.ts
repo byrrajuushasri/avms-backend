@@ -4,7 +4,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-} from "class-validator";
+} from 'class-validator';
 
 export class CreateNewsDto {
   @IsString()
@@ -17,12 +17,7 @@ export class CreateNewsDto {
   description: string;
 
   @IsString()
-  @IsIn([
-    "State News",
-    "District News",
-    "Mandal News",
-    "Sangam News",
-  ])
+  @IsIn(['State News', 'District News', 'Mandal News', 'Sangam News'])
   category: string;
 
   @IsOptional()
@@ -35,7 +30,7 @@ export class CreateNewsDto {
   date: string;
 
   @IsString()
-  @IsIn(["Image", "Video"])
+  @IsIn(['Image', 'Video'])
   mediaType: string;
 
   @IsOptional()
@@ -48,6 +43,6 @@ export class CreateNewsDto {
   featured?: string;
 
   @IsOptional()
-  @IsIn(["Active", "Inactive"])
+  @IsIn(['Active', 'Inactive'])
   status?: string;
 }

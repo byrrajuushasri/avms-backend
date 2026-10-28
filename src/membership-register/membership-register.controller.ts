@@ -1,4 +1,3 @@
-
 import {
   BadRequestException,
   Body,
@@ -60,12 +59,7 @@ const photoUploadOptions = {
     file: Express.Multer.File,
     callback: (error: Error | null, acceptFile: boolean) => void,
   ) => {
-    const allowed = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/webp',
-    ];
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
     if (allowed.includes(file.mimetype)) {
       callback(null, true);
@@ -107,10 +101,7 @@ export class MembershipRegisterController {
 
     const photoPath = uploaded?.key;
 
-    return this.membershipService.create(
-      validatedDto,
-      photoPath,
-    );
+    return this.membershipService.create(validatedDto, photoPath);
   }
 
   // GET ALL MEMBERS
@@ -175,10 +166,6 @@ export class MembershipRegisterController {
 
     const photoPath = uploaded?.key;
 
-    return this.membershipService.update(
-      id,
-      validatedDto,
-      photoPath,
-    );
+    return this.membershipService.update(id, validatedDto, photoPath);
   }
 }

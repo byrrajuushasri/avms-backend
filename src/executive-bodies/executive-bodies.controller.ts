@@ -15,9 +15,7 @@ import { CreateExecutiveBodyDto } from './dto/create-executive-body.dto';
 
 @Controller('executive-bodies')
 export class ExecutiveBodiesController {
-  constructor(
-    private readonly service: ExecutiveBodiesService,
-  ) {}
+  constructor(private readonly service: ExecutiveBodiesService) {}
 
   @Post()
   create(@Body() dto: CreateExecutiveBodyDto) {
@@ -30,9 +28,7 @@ export class ExecutiveBodiesController {
   }
 
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
@@ -45,9 +41,7 @@ export class ExecutiveBodiesController {
   }
 
   @Delete(':id')
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-  ) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
 }

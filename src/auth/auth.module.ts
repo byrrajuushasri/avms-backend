@@ -1,42 +1,28 @@
-import { Module } from "@nestjs/common";
+import { Module } from '@nestjs/common';
 
-import {
-  ConfigModule,
-  ConfigService,
-} from "@nestjs/config";
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import {
-  JwtModule,
-} from "@nestjs/jwt";
+import { JwtModule } from '@nestjs/jwt';
 
-import {
-  PassportModule,
-} from "@nestjs/passport";
+import { PassportModule } from '@nestjs/passport';
 
-import {
-  TypeOrmModule,
-} from "@nestjs/typeorm";
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { AuthController } from "./auth.controller";
-import { AuthService } from "./auth.service";
-import { JwtStrategy } from "./jwt.strategy";
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { JwtStrategy } from './jwt.strategy';
 
-import { MembershipRegister } from
-  "../membership-register/entities/membership-register.entity";
-import { MatrimonialUser } from
-  "../matrimonial-users/entities/matrimonial-user.entity";
+import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
+import { MatrimonialUser } from '../matrimonial-users/entities/matrimonial-user.entity';
 
 @Module({
   imports: [
     ConfigModule,
 
-    TypeOrmModule.forFeature([
-      MembershipRegister,
-      MatrimonialUser,
-    ]),
+    TypeOrmModule.forFeature([MembershipRegister, MatrimonialUser]),
 
     PassportModule.register({
-      defaultStrategy: "jwt",
+      defaultStrategy: 'jwt',
     }),
 
     JwtModule.registerAsync({
@@ -44,33 +30,20 @@ import { MatrimonialUser } from
 
       inject: [ConfigService],
 
-      useFactory: (
-        configService: ConfigService,
-      ) => ({
-        secret:
-          configService.get<string>(
-            "JWT_SECRET",
-          ),
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
 
         signOptions: {
-          expiresIn: "1d",
+          expiresIn: '1d',
         },
       }),
     }),
   ],
 
-  controllers: [
-    AuthController,
-  ],
+  controllers: [AuthController],
 
-  providers: [
-    AuthService,
-    JwtStrategy,
-  ],
+  providers: [AuthService, JwtStrategy],
 
-  exports: [
-    AuthService,
-    JwtModule,
-  ],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

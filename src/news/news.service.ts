@@ -1,16 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { News } from "./entities/news.entity";
-import { CreateNewsDto } from "./dto/create-news.dto";
+import { News } from './entities/news.entity';
+import { CreateNewsDto } from './dto/create-news.dto';
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class NewsService {
@@ -23,25 +20,22 @@ export class NewsService {
   // CREATE
   // =========================================================
 
-  async create(
-    createNewsDto: CreateNewsDto,
-    file?: Express.Multer.File,
-  ) {
+  async create(createNewsDto: CreateNewsDto, file?: Express.Multer.File) {
     let mediaUrl: string | null = null;
 
     // IMAGE
-    if (createNewsDto.mediaType === "Image") {
+    if (createNewsDto.mediaType === 'Image') {
       if (!file) {
-        throw new Error("Image file is required.");
+        throw new Error('Image file is required.');
       }
 
       mediaUrl = `/uploads/news/${file.filename}`;
     }
 
     // VIDEO
-    if (createNewsDto.mediaType === "Video") {
+    if (createNewsDto.mediaType === 'Video') {
       if (!createNewsDto.mediaUrl?.trim()) {
-        throw new Error("Video URL is required.");
+        throw new Error('Video URL is required.');
       }
 
       mediaUrl = createNewsDto.mediaUrl.trim();
@@ -50,13 +44,11 @@ export class NewsService {
     const news = this.newsRepository.create({
       title: createNewsDto.title.trim(),
 
-      description:
-        createNewsDto.description.trim(),
+      description: createNewsDto.description.trim(),
 
       category: createNewsDto.category,
 
-      location:
-        createNewsDto.location?.trim() || null,
+      location: createNewsDto.location?.trim() || null,
 
       date: createNewsDto.date,
 
@@ -65,11 +57,9 @@ export class NewsService {
       mediaUrl,
 
       featured:
-        createNewsDto.featured === "true" ||
-        createNewsDto.featured === "1",
+        createNewsDto.featured === 'true' || createNewsDto.featured === '1',
 
-      status:
-        createNewsDto.status || "Active",
+      status: createNewsDto.status || 'Active',
     });
 
     return await this.newsRepository.save(news);
@@ -82,7 +72,7 @@ export class NewsService {
   async findAll() {
     return await this.newsRepository.find({
       order: {
-        id: "DESC",
+        id: 'DESC',
       },
     });
   }
@@ -97,9 +87,7 @@ export class NewsService {
     });
 
     if (!news) {
-      throw new NotFoundException(
-        "News not found.",
-      );
+      throw new NotFoundException('News not found.');
     }
 
     return news;
@@ -120,76 +108,52 @@ export class NewsService {
     let mediaUrl = news.mediaUrl;
 
     // New IMAGE
-    if (createNewsDto.mediaType === "Image") {
+    if (createNewsDto.mediaType === 'Image') {
       if (file) {
         // Delete old uploaded image
-        this.deleteUploadedFile(
-          news.mediaUrl,
-        );
+        this.deleteUploadedFile(news.mediaUrl);
 
         mediaUrl = `/uploads/news/${file.filename}`;
       } else if (!news.mediaUrl) {
-        throw new Error(
-          "Image file is required.",
-        );
+        throw new Error('Image file is required.');
       }
     }
 
     // VIDEO
-    if (createNewsDto.mediaType === "Video") {
+    if (createNewsDto.mediaType === 'Video') {
       if (!createNewsDto.mediaUrl?.trim()) {
-        throw new Error(
-          "Video URL is required.",
-        );
+        throw new Error('Video URL is required.');
       }
 
       // If old media was an uploaded image,
       // delete it.
-      if (
-        news.mediaType === "Image"
-      ) {
-        this.deleteUploadedFile(
-          news.mediaUrl,
-        );
+      if (news.mediaType === 'Image') {
+        this.deleteUploadedFile(news.mediaUrl);
       }
 
-      mediaUrl =
-        createNewsDto.mediaUrl.trim();
+      mediaUrl = createNewsDto.mediaUrl.trim();
     }
 
-    news.title =
-      createNewsDto.title.trim();
+    news.title = createNewsDto.title.trim();
 
-    news.description =
-      createNewsDto.description.trim();
+    news.description = createNewsDto.description.trim();
 
-    news.category =
-      createNewsDto.category;
+    news.category = createNewsDto.category;
 
-    news.location =
-      createNewsDto.location?.trim() ||
-      null;
+    news.location = createNewsDto.location?.trim() || null;
 
-    news.date =
-      createNewsDto.date;
+    news.date = createNewsDto.date;
 
-    news.mediaType =
-      createNewsDto.mediaType;
+    news.mediaType = createNewsDto.mediaType;
 
-    news.mediaUrl =
-      mediaUrl;
+    news.mediaUrl = mediaUrl;
 
     news.featured =
-      createNewsDto.featured === "true" ||
-      createNewsDto.featured === "1";
+      createNewsDto.featured === 'true' || createNewsDto.featured === '1';
 
-    news.status =
-      createNewsDto.status ||
-      "Active";
+    news.status = createNewsDto.status || 'Active';
 
-    return await this.newsRepository.save(
-      news,
-    );
+    return await this.newsRepository.save(news);
   }
 
   // =========================================================
@@ -200,21 +164,14 @@ export class NewsService {
     const news = await this.findOne(id);
 
     // Delete uploaded image
-    if (
-      news.mediaType === "Image"
-    ) {
-      this.deleteUploadedFile(
-        news.mediaUrl,
-      );
+    if (news.mediaType === 'Image') {
+      this.deleteUploadedFile(news.mediaUrl);
     }
 
-    await this.newsRepository.remove(
-      news,
-    );
+    await this.newsRepository.remove(news);
 
     return {
-      message:
-        "News deleted successfully.",
+      message: 'News deleted successfully.',
     };
   }
 
@@ -222,27 +179,14 @@ export class NewsService {
   // DELETE UPLOADED FILE
   // =========================================================
 
-  private deleteUploadedFile(
-    mediaUrl: string | null,
-  ) {
-    if (
-      !mediaUrl ||
-      !mediaUrl.startsWith(
-        "/uploads/news/",
-      )
-    ) {
+  private deleteUploadedFile(mediaUrl: string | null) {
+    if (!mediaUrl || !mediaUrl.startsWith('/uploads/news/')) {
       return;
     }
 
-    const filename =
-      path.basename(mediaUrl);
+    const filename = path.basename(mediaUrl);
 
-    const filePath = path.join(
-      process.cwd(),
-      "uploads",
-      "news",
-      filename,
-    );
+    const filePath = path.join(process.cwd(), 'uploads', 'news', filename);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);

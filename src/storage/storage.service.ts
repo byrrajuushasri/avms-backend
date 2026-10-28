@@ -1,22 +1,16 @@
-
 import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
 
-import {
-  PutObjectCommand,
-  DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
+import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 import { randomUUID } from 'crypto';
 import { s3Client } from './s3-client';
 
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-
 
 @Injectable()
 export class StorageService {
@@ -27,18 +21,14 @@ export class StorageService {
     if (!file || !file.buffer) {
       throw new BadRequestException('Image file is required');
     }
-  console.log('S3 CONFIG CHECK:', {
-    endpointLoaded: Boolean(process.env.AWS_ENDPOINT_URL),
-    bucketLoaded: Boolean(process.env.AWS_S3_BUCKET_NAME),
-    regionLoaded: Boolean(process.env.AWS_DEFAULT_REGION),
-    accessKeyLoaded: Boolean(process.env.AWS_ACCESS_KEY_ID?.trim()),
-    secretKeyLoaded: Boolean(process.env.AWS_SECRET_ACCESS_KEY?.trim()),
-  });
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-    ];
+    console.log('S3 CONFIG CHECK:', {
+      endpointLoaded: Boolean(process.env.AWS_ENDPOINT_URL),
+      bucketLoaded: Boolean(process.env.AWS_S3_BUCKET_NAME),
+      regionLoaded: Boolean(process.env.AWS_DEFAULT_REGION),
+      accessKeyLoaded: Boolean(process.env.AWS_ACCESS_KEY_ID?.trim()),
+      secretKeyLoaded: Boolean(process.env.AWS_SECRET_ACCESS_KEY?.trim()),
+    });
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
     if (!allowedTypes.includes(file.mimetype)) {
       throw new BadRequestException(
@@ -49,9 +39,7 @@ export class StorageService {
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      throw new BadRequestException(
-        'Image size must be 5 MB or less',
-      );
+      throw new BadRequestException('Image size must be 5 MB or less');
     }
 
     const extensionByType: Record<string, string> = {
@@ -94,9 +82,7 @@ export class StorageService {
         statusCode: err?.$metadata?.httpStatusCode,
       });
 
-      throw new InternalServerErrorException(
-        'Image upload failed',
-      );
+      throw new InternalServerErrorException('Image upload failed');
     }
   }
 
@@ -111,19 +97,18 @@ export class StorageService {
     );
   }
 
- 
   async getImageUrl(key: string): Promise<string> {
-  if (!key) {
-    throw new BadRequestException('Image key is required');
-  }
+    if (!key) {
+      throw new BadRequestException('Image key is required');
+    }
 
-  return getSignedUrl(
-    s3Client,
-    new GetObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET_NAME,
-      Key: key,
-    }),
-    { expiresIn: 300 },
-  );
-}
+    return getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: key,
+      }),
+      { expiresIn: 300 },
+    );
+  }
 }

@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -15,14 +14,8 @@ import { StorageModule } from '../storage/storage.module';
     EmailModule,
     StorageModule,
   ],
-  controllers: [
-    MembershipRegisterController,
-  ],
-  providers: [
-    MembershipRegisterService,
-  ],
-  exports: [
-    MembershipRegisterService,
-  ],
+  controllers: [MembershipRegisterController],
+  providers: [MembershipRegisterService],
+  exports: [MembershipRegisterService],
 })
 export class MembershipRegisterModule {}

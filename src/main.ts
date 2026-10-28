@@ -1,10 +1,9 @@
-
-import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
-import { join } from "path";
-import * as express from "express";
-import { existsSync } from "fs";
-import { ValidationPipe } from "@nestjs/common";
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { join } from 'path';
+import * as express from 'express';
+import { existsSync } from 'fs';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -25,9 +24,9 @@ async function bootstrap() {
   // ==========================================
 
   const allowedOrigins = [
-    "http://localhost:3000",
-    "https://www.aaryavysyamahasabha.com",
-    "https://aaryavysyamahasabha.com",
+    'http://localhost:3000',
+    'https://www.aaryavysyamahasabha.com',
+    'https://aaryavysyamahasabha.com',
   ];
 
   app.enableCors({
@@ -42,29 +41,14 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      console.log("CORS BLOCKED:", origin);
+      console.log('CORS BLOCKED:', origin);
 
-      return callback(
-        new Error("Not allowed by CORS"),
-        false,
-      );
+      return callback(new Error('Not allowed by CORS'), false);
     },
 
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Accept",
-      "Origin",
-    ],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
 
     credentials: true,
   });
@@ -73,52 +57,28 @@ async function bootstrap() {
   // UPLOADS FOLDER
   // ==========================================
 
-  const uploadsPath = join(
-    process.cwd(),
-    "uploads",
-  );
+  const uploadsPath = join(process.cwd(), 'uploads');
 
-  const matrimonialPath = join(
-    uploadsPath,
-    "matrimonial",
-  );
+  const matrimonialPath = join(uploadsPath, 'matrimonial');
 
-  console.log("=================================");
-  console.log(
-    "Current working directory:",
-    process.cwd(),
-  );
+  console.log('=================================');
+  console.log('Current working directory:', process.cwd());
 
-  console.log(
-    "Uploads path:",
-    uploadsPath,
-  );
+  console.log('Uploads path:', uploadsPath);
 
-  console.log(
-    "Matrimonial path:",
-    matrimonialPath,
-  );
+  console.log('Matrimonial path:', matrimonialPath);
 
-  console.log(
-    "Uploads folder exists:",
-    existsSync(uploadsPath),
-  );
+  console.log('Uploads folder exists:', existsSync(uploadsPath));
 
-  console.log(
-    "Matrimonial folder exists:",
-    existsSync(matrimonialPath),
-  );
+  console.log('Matrimonial folder exists:', existsSync(matrimonialPath));
 
-  console.log("=================================");
+  console.log('=================================');
 
   // ==========================================
   // SERVE UPLOADED FILES
   // ==========================================
 
-  app.use(
-    "/uploads",
-    express.static(uploadsPath),
-  );
+  app.use('/uploads', express.static(uploadsPath));
 
   // ==========================================
   // START SERVER
@@ -126,28 +86,18 @@ async function bootstrap() {
 
   const port = process.env.PORT || 5000;
 
-  await app.listen(
-    port,
-    "0.0.0.0",
-  );
+  await app.listen(port, '0.0.0.0');
 
-  console.log("=================================");
-  console.log(
-    `Backend running on port: ${port}`,
-  );
+  console.log('=================================');
+  console.log(`Backend running on port: ${port}`);
 
-  console.log("Backend URL:");
-  console.log(
-    "https://avms-backend-production.up.railway.app",
-  );
+  console.log('Backend URL:');
+  console.log('https://avms-backend-production.up.railway.app');
 
-  console.log("Uploads: /uploads/");
-  console.log(
-    "Matrimonial: /uploads/matrimonial/",
-  );
+  console.log('Uploads: /uploads/');
+  console.log('Matrimonial: /uploads/matrimonial/');
 
-  console.log("=================================");
+  console.log('=================================');
 }
 
 bootstrap();
-

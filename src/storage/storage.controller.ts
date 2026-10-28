@@ -19,9 +19,7 @@ export class StorageController {
   ) {
     if (
       !key ||
-      !/^(members|matrimonial|blog)\/[a-f0-9-]+\.(jpg|png|webp)$/i.test(
-        key,
-      )
+      !/^(members|matrimonial|blog)\/[a-f0-9-]+\.(jpg|png|webp)$/i.test(key)
     ) {
       throw new BadRequestException('Invalid image key.');
     }

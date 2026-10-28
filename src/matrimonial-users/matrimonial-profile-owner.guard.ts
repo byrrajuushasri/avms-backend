@@ -9,10 +9,12 @@ import {
 export class MatrimonialProfileOwnerGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const user = request.user as {
-      account_type?: string;
-      matrimonial_id?: number;
-    } | undefined;
+    const user = request.user as
+      | {
+          account_type?: string;
+          matrimonial_id?: number;
+        }
+      | undefined;
     const profileId = Number(request.params.id);
 
     if (

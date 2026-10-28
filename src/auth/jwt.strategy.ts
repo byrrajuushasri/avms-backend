@@ -1,37 +1,21 @@
-import {
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 
-import { PassportStrategy } from "@nestjs/passport";
-import {
-  ExtractJwt,
-  Strategy,
-} from "passport-jwt";
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(
-  Strategy,
-  "jwt",
-) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor() {
-    const secret =
-      process.env.JWT_SECRET;
+    const secret = process.env.JWT_SECRET;
 
     if (!secret) {
-      throw new Error(
-        "JWT_SECRET is not defined in .env",
-      );
+      throw new Error('JWT_SECRET is not defined in .env');
     }
 
-    console.log(
-      "JWT Strategy Secret Loaded:",
-      secret ? "YES" : "NO",
-    );
+    console.log('JWT Strategy Secret Loaded:', secret ? 'YES' : 'NO');
 
     super({
-      jwtFromRequest:
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 
       ignoreExpiration: false,
 
@@ -40,43 +24,34 @@ export class JwtStrategy extends PassportStrategy(
   }
 
   async validate(payload: any) {
-    console.log(
-      "JWT PAYLOAD:",
-      payload,
-    );
+    console.log('JWT PAYLOAD:', payload);
 
-    if (!payload?.id) {
-      throw new UnauthorizedException(
-        "Invalid authentication token",
-      );
+    const userId = payload?.id ?? payload?.sub;
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid authentication token');
     }
 
     return {
-      id: payload.id,
+      id: userId,
 
-      member_id:
-        payload.member_id,
+      member_id: payload.member_id,
 
-      email:
-        payload.email,
+      email: payload.email,
 
-      account_type:
-        payload.account_type || "member",
+      account_type: payload.account_type || 'member',
 
-      matrimonial_id:
-        payload.matrimonial_id ?? null,
+      matrimonial_id: payload.matrimonial_id ?? null,
 
-      role:
-        payload.role || "user",
+      gender: payload.gender ?? null,
 
-      district:
-        payload.district ?? null,
+      role: payload.role || 'user',
 
-      mandal:
-        payload.mandal ?? null,
+      district: payload.district ?? null,
 
-      sangham:
-        payload.sangham ?? null,
+      mandal: payload.mandal ?? null,
+
+      sangham: payload.sangham ?? null,
     };
   }
 }

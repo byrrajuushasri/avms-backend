@@ -5,9 +5,7 @@ import { EmailService } from '../email/email.service';
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
-  constructor(
-    private readonly emailService: EmailService,
-  ) {}
+  constructor(private readonly emailService: EmailService) {}
 
   /**
    * Check Resend configuration

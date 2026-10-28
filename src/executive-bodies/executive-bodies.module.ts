@@ -6,22 +6,12 @@ import { ExecutiveBodiesController } from './executive-bodies.controller';
 import { ExecutiveBodiesService } from './executive-bodies.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      ExecutiveBody,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([ExecutiveBody])],
 
-  controllers: [
-    ExecutiveBodiesController,
-  ],
+  controllers: [ExecutiveBodiesController],
 
-  providers: [
-    ExecutiveBodiesService,
-  ],
+  providers: [ExecutiveBodiesService],
 
-  exports: [
-    ExecutiveBodiesService,
-  ],
+  exports: [ExecutiveBodiesService],
 })
 export class ExecutiveBodiesModule {}

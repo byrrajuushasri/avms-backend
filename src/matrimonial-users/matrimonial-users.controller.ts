@@ -22,15 +22,11 @@ import { MatrimonialUsersService } from './matrimonial-users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MatrimonialProfileOwnerGuard } from './matrimonial-profile-owner.guard';
 
-
 @Controller('matrimonial-users')
 export class MatrimonialUsersController {
-
   constructor(
-    private readonly matrimonialUsersService:
-      MatrimonialUsersService,
+    private readonly matrimonialUsersService: MatrimonialUsersService,
   ) {}
-
 
   // =========================================================
   // REGISTER MATRIMONIAL USER
@@ -39,84 +35,44 @@ export class MatrimonialUsersController {
   @Post('register')
   @UseInterceptors(
     FileInterceptor('photo', {
-
       storage: diskStorage({
+        destination: './uploads/matrimonial',
 
-        destination:
-          './uploads/matrimonial',
+        filename: (req, file, callback) => {
+          const uniqueName =
+            `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
+            extname(file.originalname);
 
-        filename:
-          (req, file, callback) => {
-
-            const uniqueName =
-              `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
-              extname(file.originalname);
-
-            callback(
-              null,
-              uniqueName,
-            );
-          },
-
+          callback(null, uniqueName);
+        },
       }),
 
-      fileFilter:
-        (req, file, callback) => {
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return callback(new Error('Only image files are allowed'), false);
+        }
 
-          if (
-            !file.mimetype.startsWith(
-              'image/',
-            )
-          ) {
-
-            return callback(
-              new Error(
-                'Only image files are allowed',
-              ),
-              false,
-            );
-          }
-
-          callback(
-            null,
-            true,
-          );
-        },
-
-      limits: {
-        fileSize:
-          5 * 1024 * 1024,
+        callback(null, true);
       },
 
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
     }),
   )
   async register(
-
     @Body()
     data: any,
 
     @UploadedFile()
     photo?: Express.Multer.File,
-
   ) {
+    console.log('========== REGISTER PHOTO ==========');
 
-    console.log(
-      '========== REGISTER PHOTO ==========',
-    );
+    console.log('Photo:', photo?.filename || 'No photo');
 
-    console.log(
-      'Photo:',
-      photo?.filename ||
-        'No photo',
-    );
-
-
-    return this.matrimonialUsersService.register(
-      data,
-      photo,
-    );
+    return this.matrimonialUsersService.register(data, photo);
   }
-
 
   // =========================================================
   // CHECK MEMBER
@@ -130,44 +86,34 @@ export class MatrimonialUsersController {
       email?: string;
     },
   ) {
-
-    return this.matrimonialUsersService.checkMember(
-      data,
-    );
+    return this.matrimonialUsersService.checkMember(data);
   }
-
 
   // =========================================================
   // GET ALL MATRIMONIAL USERS
   // =========================================================
 
   @Get()
-  async findAll() {
+  @UseGuards(JwtAuthGuard)
+  async findAll(@Req() req: Request) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+      gender?: 'Male' | 'Female';
+      member_id?: string;
+    };
 
-    return this.matrimonialUsersService.findAll();
+    return this.matrimonialUsersService.findAll(user);
   }
-
 
   // =========================================================
   // GET SINGLE MATRIMONIAL USER
   // =========================================================
 
   @Get(':id')
-  async findOne(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    id: number,
-
-  ) {
-
-    return this.matrimonialUsersService.findOne(
-      id,
-    );
+  async findOne(@Param('id') id: string) {
+    return this.matrimonialUsersService.findOne(id);
   }
-
 
   // =========================================================
   // APPROVE MATRIMONIAL PROFILE
@@ -191,30 +137,15 @@ export class MatrimonialUsersController {
 
   @Put(':id/approve')
   async approve(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
+    @Param('id', ParseIntPipe)
     id: number,
-
   ) {
+    console.log('========== APPROVE MATRIMONIAL ==========');
 
-    console.log(
-      '========== APPROVE MATRIMONIAL ==========',
-    );
+    console.log('Matrimonial ID:', id);
 
-    console.log(
-      'Matrimonial ID:',
-      id,
-    );
-
-
-    return this.matrimonialUsersService.approve(
-      id,
-    );
+    return this.matrimonialUsersService.approve(id);
   }
-
 
   // =========================================================
   // UPDATE MATRIMONIAL USER
@@ -236,10 +167,7 @@ export class MatrimonialUsersController {
       }),
       fileFilter: (req, file, callback) => {
         if (!file.mimetype.startsWith('image/')) {
-          return callback(
-            new Error('Only image files are allowed'),
-            false,
-          );
+          return callback(new Error('Only image files are allowed'), false);
         }
 
         callback(null, true);
@@ -260,74 +188,39 @@ export class MatrimonialUsersController {
       matrimonial_id?: number;
     };
 
-    return this.matrimonialUsersService.updateOwnProfile(
-      id,
-      data,
-      photo,
-      user,
-    );
+    return this.matrimonialUsersService.updateOwnProfile(id, data, photo, user);
   }
 
   @Put(':id')
   @UseInterceptors(
     FileInterceptor('photo', {
-
       storage: diskStorage({
+        destination: './uploads/matrimonial',
 
-        destination:
-          './uploads/matrimonial',
+        filename: (req, file, callback) => {
+          const uniqueName =
+            `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
+            extname(file.originalname);
 
-        filename:
-          (req, file, callback) => {
-
-            const uniqueName =
-              `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
-              extname(file.originalname);
-
-            callback(
-              null,
-              uniqueName,
-            );
-          },
-
+          callback(null, uniqueName);
+        },
       }),
 
-      fileFilter:
-        (req, file, callback) => {
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return callback(new Error('Only image files are allowed'), false);
+        }
 
-          if (
-            !file.mimetype.startsWith(
-              'image/',
-            )
-          ) {
-
-            return callback(
-              new Error(
-                'Only image files are allowed',
-              ),
-              false,
-            );
-          }
-
-          callback(
-            null,
-            true,
-          );
-        },
-
-      limits: {
-        fileSize:
-          5 * 1024 * 1024,
+        callback(null, true);
       },
 
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
     }),
   )
   async update(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
+    @Param('id', ParseIntPipe)
     id: number,
 
     @Body()
@@ -335,32 +228,15 @@ export class MatrimonialUsersController {
 
     @UploadedFile()
     photo?: Express.Multer.File,
-
   ) {
+    console.log('========== UPDATE PHOTO ==========');
 
-    console.log(
-      '========== UPDATE PHOTO ==========',
-    );
+    console.log('Matrimonial ID:', id);
 
-    console.log(
-      'Matrimonial ID:',
-      id,
-    );
+    console.log('Uploaded Photo:', photo?.filename || 'NO PHOTO');
 
-    console.log(
-      'Uploaded Photo:',
-      photo?.filename ||
-        'NO PHOTO',
-    );
-
-
-    return this.matrimonialUsersService.update(
-      id,
-      data,
-      photo,
-    );
+    return this.matrimonialUsersService.update(id, data, photo);
   }
-
 
   // =========================================================
   // DELETE MATRIMONIAL USER
@@ -368,18 +244,9 @@ export class MatrimonialUsersController {
 
   @Delete(':id')
   async remove(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
+    @Param('id', ParseIntPipe)
     id: number,
-
   ) {
-
-    return this.matrimonialUsersService.remove(
-      id,
-    );
+    return this.matrimonialUsersService.remove(id);
   }
-
 }

@@ -1,4 +1,3 @@
-
 import {
   ConflictException,
   Injectable,
@@ -9,10 +8,7 @@ import {
 import * as bcrypt from 'bcrypt';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  DataSource,
-  Repository,
-} from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { MembershipRegister } from './entities/membership-register.entity';
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
@@ -35,9 +31,7 @@ export class MembershipRegisterService {
 
   private validateMobileNumber(value: unknown): string {
     if (typeof value !== 'string' || !value.trim()) {
-      throw new BadRequestException(
-        'Mobile number is required.',
-      );
+      throw new BadRequestException('Mobile number is required.');
     }
 
     let mobile = value.trim().replace(/[\s()-]/g, '');
@@ -106,11 +100,7 @@ export class MembershipRegisterService {
 
       const districtId = Number(districtRows[0].id);
 
-      if (
-        !Number.isInteger(districtId) ||
-        districtId < 0 ||
-        districtId > 99
-      ) {
+      if (!Number.isInteger(districtId) || districtId < 0 || districtId > 99) {
         throw new BadRequestException(
           `District location ID ${districtId} cannot be converted to a 2-digit AVS code.`,
         );
@@ -120,10 +110,7 @@ export class MembershipRegisterService {
 
       if (body === 'District Body') {
         mandalCode = '000';
-      } else if (
-        body === 'Mandal Body' ||
-        body === 'Sangham Body'
-      ) {
+      } else if (body === 'Mandal Body' || body === 'Sangham Body') {
         if (!mandal) {
           throw new BadRequestException('Mandal is required.');
         }
@@ -148,11 +135,7 @@ export class MembershipRegisterService {
 
         const mandalId = Number(mandalRows[0].id);
 
-        if (
-          !Number.isInteger(mandalId) ||
-          mandalId < 0 ||
-          mandalId > 999
-        ) {
+        if (!Number.isInteger(mandalId) || mandalId < 0 || mandalId > 999) {
           throw new BadRequestException(
             `Mandal location ID ${mandalId} cannot be converted to a 3-digit AVS code.`,
           );
@@ -160,9 +143,7 @@ export class MembershipRegisterService {
 
         mandalCode = String(mandalId).padStart(3, '0');
       } else {
-        throw new BadRequestException(
-          `Invalid Executive Body: ${body}`,
-        );
+        throw new BadRequestException(`Invalid Executive Body: ${body}`);
       }
     }
 
@@ -248,10 +229,7 @@ export class MembershipRegisterService {
   // CREATE MEMBERSHIP
   // =========================================================
 
-  async create(
-    dto: CreateMembershipRegisterDto,
-    photoPath?: string,
-  ) {
+  async create(dto: CreateMembershipRegisterDto, photoPath?: string) {
     // Always normalize mobile before database operations.
     const mobile = this.validateMobileNumber(dto.mobile);
 
@@ -269,10 +247,7 @@ export class MembershipRegisterService {
       throw new BadRequestException('District is required.');
     }
 
-    if (
-      ['Mandal Body', 'Sangham Body'].includes(executiveBody) &&
-      !mandal
-    ) {
+    if (['Mandal Body', 'Sangham Body'].includes(executiveBody) && !mandal) {
       throw new BadRequestException('Mandal is required.');
     }
 
@@ -360,11 +335,7 @@ export class MembershipRegisterService {
     member.designation = dto.designation?.trim() || 'Member';
 
     // GENERATE AVS ID
-    const avsId = await this.generateAvsId(
-      district,
-      mandal,
-      executiveBody,
-    );
+    const avsId = await this.generateAvsId(district, mandal, executiveBody);
 
     member.avs_id = avsId;
 
@@ -457,9 +428,7 @@ export class MembershipRegisterService {
     });
 
     if (!member) {
-      throw new NotFoundException(
-        `Member with ID ${id} not found.`,
-      );
+      throw new NotFoundException(`Member with ID ${id} not found.`);
     }
 
     const { password, ...safeMember } = member;
@@ -471,10 +440,7 @@ export class MembershipRegisterService {
   // FIND ALL
   // =========================================================
 
-  async findAll(
-    sangham?: string,
-    role?: string,
-  ) {
+  async findAll(sangham?: string, role?: string) {
     console.log('=================================');
     console.log('GET MEMBERS CALLED');
     console.log('SERVICE ROLE:', role);
@@ -485,11 +451,7 @@ export class MembershipRegisterService {
       .createQueryBuilder('member')
       .orderBy('member.id', 'DESC');
 
-    if (
-      role === 'super_admin' ||
-      role === 'admin' ||
-      role === 'state_admin'
-    ) {
+    if (role === 'super_admin' || role === 'admin' || role === 'state_admin') {
       // Full access
     } else if (role === 'sangham_admin') {
       if (!sangham) {
@@ -533,14 +495,12 @@ export class MembershipRegisterService {
       'joint secretary',
     ];
 
-    const query = this.membershipRepository
-      .createQueryBuilder('member')
-      .where(
-        `
+    const query = this.membershipRepository.createQueryBuilder('member').where(
+      `
         LOWER(TRIM(member.designation)) IN (:...designations)
         `,
-        { designations },
-      );
+      { designations },
+    );
 
     if (district) {
       query.andWhere(
@@ -590,13 +550,10 @@ export class MembershipRegisterService {
     });
 
     if (!member) {
-      throw new NotFoundException(
-        `Member with ID ${id} not found.`,
-      );
+      throw new NotFoundException(`Member with ID ${id} not found.`);
     }
 
-    const wasApproved =
-      String(member.status).trim().toLowerCase() === 'active';
+    const wasApproved = String(member.status).trim().toLowerCase() === 'active';
 
     // BASIC DETAILS
     if (dto.full_name !== undefined) {
@@ -820,9 +777,7 @@ export class MembershipRegisterService {
     });
 
     if (!member) {
-      throw new NotFoundException(
-        `Member with ID ${id} not found.`,
-      );
+      throw new NotFoundException(`Member with ID ${id} not found.`);
     }
 
     await this.membershipRepository.remove(member);
@@ -832,6 +787,4 @@ export class MembershipRegisterService {
       message: 'Membership deleted successfully',
     };
   }
-
-  
 }

@@ -7,24 +7,18 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
-import { SatramsService } from "./satrams.service";
-import { CreateSatramDto } from "./dto/create-satram.dto";
+import { SatramsService } from './satrams.service';
+import { CreateSatramDto } from './dto/create-satram.dto';
 
-@Controller("satrams")
+@Controller('satrams')
 export class SatramsController {
-  constructor(
-    private readonly satramsService: SatramsService,
-  ) {}
+  constructor(private readonly satramsService: SatramsService) {}
 
   @Post()
-  create(
-    @Body() createSatramDto: CreateSatramDto,
-  ) {
-    return this.satramsService.create(
-      createSatramDto,
-    );
+  create(@Body() createSatramDto: CreateSatramDto) {
+    return this.satramsService.create(createSatramDto);
   }
 
   @Get()
@@ -32,28 +26,21 @@ export class SatramsController {
     return this.satramsService.findAll();
   }
 
-  @Get(":id")
-  findOne(
-    @Param("id", ParseIntPipe) id: number,
-  ) {
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.satramsService.findOne(id);
   }
 
-  @Patch(":id")
+  @Patch(':id')
   update(
-    @Param("id", ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateSatramDto: Partial<CreateSatramDto>,
   ) {
-    return this.satramsService.update(
-      id,
-      updateSatramDto,
-    );
+    return this.satramsService.update(id, updateSatramDto);
   }
 
-  @Delete(":id")
-  remove(
-    @Param("id", ParseIntPipe) id: number,
-  ) {
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.satramsService.remove(id);
   }
 }

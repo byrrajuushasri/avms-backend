@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -36,18 +33,13 @@ export class ExecutiveBodiesService {
     });
 
     if (!body) {
-      throw new NotFoundException(
-        'Executive Body not found',
-      );
+      throw new NotFoundException('Executive Body not found');
     }
 
     return body;
   }
 
-  async update(
-    id: number,
-    dto: CreateExecutiveBodyDto,
-  ) {
+  async update(id: number, dto: CreateExecutiveBodyDto) {
     const body = await this.findOne(id);
 
     Object.assign(body, dto);

@@ -14,21 +14,15 @@ import { CreateMembershipDto } from './dto/create-membership.dto';
 
 @Controller('membership')
 export class MembershipController {
-  constructor(
-    private readonly membershipService: MembershipService,
-  ) {}
+  constructor(private readonly membershipService: MembershipService) {}
 
   // ============================================
   // CREATE MEMBERSHIP
   // ============================================
 
   @Post()
-  create(
-    @Body() createMembershipDto: CreateMembershipDto,
-  ) {
-    return this.membershipService.create(
-      createMembershipDto,
-    );
+  create(@Body() createMembershipDto: CreateMembershipDto) {
+    return this.membershipService.create(createMembershipDto);
   }
 
   // ============================================
@@ -45,12 +39,8 @@ export class MembershipController {
   // ============================================
 
   @Get('member/:member_id')
-  findByMemberId(
-    @Param('member_id') member_id: string,
-  ) {
-    return this.membershipService.findByMemberId(
-      member_id,
-    );
+  findByMemberId(@Param('member_id') member_id: string) {
+    return this.membershipService.findByMemberId(member_id);
   }
 
   // ============================================
@@ -70,10 +60,7 @@ export class MembershipController {
       mobile: string;
     },
   ) {
-    return this.membershipService.updateMemberProfile(
-      id,
-      body,
-    );
+    return this.membershipService.updateMemberProfile(id, body);
   }
 
   // ============================================
@@ -88,9 +75,7 @@ export class MembershipController {
   // }
   // ============================================
 
-  @Patch(
-    'member/:id/authorize-matrimony',
-  )
+  @Patch('member/:id/authorize-matrimony')
   authorizeMatrimony(
     @Param('id', ParseIntPipe) id: number,
 
@@ -99,10 +84,7 @@ export class MembershipController {
       expiryDate: string;
     },
   ) {
-    return this.membershipService.authorizeMatrimony(
-      id,
-      body.expiryDate,
-    );
+    return this.membershipService.authorizeMatrimony(id, body.expiryDate);
   }
 
   // ============================================
@@ -110,9 +92,7 @@ export class MembershipController {
   // ============================================
 
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.membershipService.findOne(id);
   }
 }

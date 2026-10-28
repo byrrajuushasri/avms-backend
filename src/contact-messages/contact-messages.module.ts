@@ -10,7 +10,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 @Module({
-  imports: [ 
+  imports: [
     TypeOrmModule.forFeature([ContactMessage]),
     AuthModule,
     EmailModule,

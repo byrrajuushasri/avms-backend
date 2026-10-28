@@ -7,16 +7,14 @@ import {
   ParseIntPipe,
   Post,
   Put,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
-import { TempleEventsService } from "./temple-events.service";
-import { CreateTempleEventDto } from "./dto/create-temple-event.dto";
+import { TempleEventsService } from './temple-events.service';
+import { CreateTempleEventDto } from './dto/create-temple-event.dto';
 
-@Controller("temple-events")
+@Controller('temple-events')
 export class TempleEventsController {
-  constructor(
-    private readonly templeEventsService: TempleEventsService,
-  ) {}
+  constructor(private readonly templeEventsService: TempleEventsService) {}
 
   // =========================================================
   // CREATE EVENT
@@ -24,9 +22,7 @@ export class TempleEventsController {
   // =========================================================
 
   @Post()
-  async create(
-    @Body() dto: CreateTempleEventDto,
-  ) {
+  async create(@Body() dto: CreateTempleEventDto) {
     return this.templeEventsService.create(dto);
   }
 
@@ -45,7 +41,7 @@ export class TempleEventsController {
   // GET /temple-events/admin/all
   // =========================================================
 
-  @Get("admin/all")
+  @Get('admin/all')
   async findAllAdmin() {
     return this.templeEventsService.findAllAdmin();
   }
@@ -55,10 +51,8 @@ export class TempleEventsController {
   // GET /temple-events/:id
   // =========================================================
 
-  @Get(":id")
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-  ) {
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.templeEventsService.findOne(id);
   }
 
@@ -67,9 +61,9 @@ export class TempleEventsController {
   // PUT /temple-events/:id
   // =========================================================
 
-  @Put(":id")
+  @Put(':id')
   async update(
-    @Param("id", ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: Partial<CreateTempleEventDto>,
   ) {
     return this.templeEventsService.update(id, dto);
@@ -80,10 +74,8 @@ export class TempleEventsController {
   // DELETE /temple-events/:id
   // =========================================================
 
-  @Delete(":id")
-  async remove(
-    @Param("id", ParseIntPipe) id: number,
-  ) {
+  @Delete(':id')
+  async remove(@Param('id', ParseIntPipe) id: number) {
     return this.templeEventsService.remove(id);
   }
 }

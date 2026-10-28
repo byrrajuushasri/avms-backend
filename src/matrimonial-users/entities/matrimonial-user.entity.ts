@@ -188,10 +188,10 @@ export class MatrimonialUser {
     nullable: true,
   })
   family_details: string | null;
-  
-// =========================================================
-// FATHER OCCUPATION
-// =========================================================
+
+  // =========================================================
+  // FATHER OCCUPATION
+  // =========================================================
 
   @Column({
     type: 'varchar',
@@ -199,7 +199,6 @@ export class MatrimonialUser {
     nullable: true,
   })
   father_occupation: string | null;
-
 
   // =========================================================
   // MOTHER OCCUPATION
@@ -210,7 +209,7 @@ export class MatrimonialUser {
     length: 255,
     nullable: true,
   })
-mother_occupation: string | null;
+  mother_occupation: string | null;
 
   @Column({
     type: 'text',
@@ -245,10 +244,10 @@ mother_occupation: string | null;
   status: string | null;
 
   @Column({
-  type: 'varchar',
-  length: 150,
-  nullable: true,
-})
+    type: 'varchar',
+    length: 150,
+    nullable: true,
+  })
   preference_name: string | null;
 
   @Column({
@@ -264,25 +263,25 @@ mother_occupation: string | null;
     nullable: true,
   })
   preference_area: string | null;
-@Column({
-  type: 'datetime',
-  nullable: true,
-})
-approved_at: Date | null;
+  @Column({
+    type: 'datetime',
+    nullable: true,
+  })
+  approved_at: Date | null;
 
-@Column({
-  type: 'datetime',
-  nullable: true,
-})
-expiry_date: Date | null;
+  @Column({
+    type: 'datetime',
+    nullable: true,
+  })
+  expiry_date: Date | null;
   @Column('tinyint', {
     default: 0,
   })
   consent: number;
-    @CreateDateColumn({
-      type: 'timestamp',
-    })
-    created_at: Date;
+  @CreateDateColumn({
+    type: 'timestamp',
+  })
+  created_at: Date;
 
   @UpdateDateColumn({
     type: 'timestamp',

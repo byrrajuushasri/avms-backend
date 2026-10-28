@@ -12,25 +12,15 @@ import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      MatrimonialUser,
-      MembershipRegister,
-    ]),
+    TypeOrmModule.forFeature([MatrimonialUser, MembershipRegister]),
 
     EmailModule,
   ],
 
-  controllers: [
-    MatrimonialUsersController,
-  ],
+  controllers: [MatrimonialUsersController],
 
-  providers: [
-    MatrimonialUsersService,
-    MatrimonialProfileOwnerGuard,
-  ],
+  providers: [MatrimonialUsersService, MatrimonialProfileOwnerGuard],
 
-  exports: [
-    MatrimonialUsersService,
-  ],
+  exports: [MatrimonialUsersService],
 })
 export class MatrimonialUsersModule {}
