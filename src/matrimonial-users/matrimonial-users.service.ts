@@ -12,6 +12,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { MatrimonialUser } from './entities/matrimonial-user.entity';
+import { MatrimonialInterestRequest } from './entities/matrimonial-interest-request.entity';
 
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
 
@@ -26,8 +27,215 @@ export class MatrimonialUsersService {
     @InjectRepository(MembershipRegister)
     private readonly memberRepository: Repository<MembershipRegister>,
 
+    @InjectRepository(MatrimonialInterestRequest)
+    private readonly interestRequestRepository: Repository<MatrimonialInterestRequest>,
+
     private readonly emailService: EmailService,
   ) {}
+
+  private async getAuthenticatedProfile(user?: {
+    account_type?: string;
+    matrimonial_id?: number;
+    member_id?: string;
+  }): Promise<MatrimonialUser> {
+    let profile: MatrimonialUser | null = null;
+
+    if (user?.account_type === 'matrimonial' && user.matrimonial_id) {
+      profile = await this.userRepository.findOne({
+        where: { id: user.matrimonial_id },
+      });
+    }
+
+    if (!profile && user?.member_id) {
+      profile = await this.userRepository.findOne({
+        where: { member_id: user.member_id },
+      });
+    }
+
+    if (!profile) {
+      throw new ForbiddenException(
+        'A registered matrimonial profile is required for this action.',
+      );
+    }
+
+    return profile;
+  }
+
+  async sendInterestRequest(
+    recipientProfileId: number,
+    user?: {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    },
+  ) {
+    const sender = await this.getAuthenticatedProfile(user);
+
+    if (sender.id === recipientProfileId) {
+      throw new BadRequestException(
+        'You cannot send an interest request to your own profile.',
+      );
+    }
+
+    const recipient = await this.userRepository.findOne({
+      where: { id: recipientProfileId },
+    });
+
+    if (!recipient) {
+      throw new NotFoundException('Matrimonial profile not found.');
+    }
+
+    const existingRequest = await this.interestRequestRepository.findOne({
+      where: {
+        sender_profile_id: sender.id,
+        recipient_profile_id: recipient.id,
+      },
+    });
+
+    if (existingRequest) {
+      return {
+        message: 'Interest request already exists.',
+        request: existingRequest,
+      };
+    }
+
+    const request = this.interestRequestRepository.create({
+      sender_profile_id: sender.id,
+      recipient_profile_id: recipient.id,
+      status: 'Pending',
+    });
+    const savedRequest = await this.interestRequestRepository.save(request);
+
+    return {
+      message: 'Interest request sent successfully.',
+      request: savedRequest,
+    };
+  }
+
+  async getReceivedRequests(user?: {
+    account_type?: string;
+    matrimonial_id?: number;
+    member_id?: string;
+  }) {
+    const profile = await this.getAuthenticatedProfile(user);
+    const requests = await this.interestRequestRepository.find({
+      where: { recipient_profile_id: profile.id },
+      order: { created_at: 'DESC' },
+    });
+
+    const requestProfiles = await Promise.all(
+      requests.map(async (request) => ({
+        id: request.id,
+        status: request.status,
+        created_at: request.created_at,
+        profile: await this.findOne(request.sender_profile_id),
+      })),
+    );
+
+    const pendingCount = requests.filter(
+      (request) => request.status === 'Pending',
+    ).length;
+
+    return {
+      counts: {
+        likes: requests.length,
+        requests: pendingCount,
+        accepted: requests.filter((request) => request.status === 'Accepted')
+          .length,
+      },
+      requests: requestProfiles,
+    };
+  }
+
+  async getSentRequests(user?: {
+    account_type?: string;
+    matrimonial_id?: number;
+    member_id?: string;
+  }) {
+    const profile = await this.getAuthenticatedProfile(user);
+    const requests = await this.interestRequestRepository.find({
+      where: { sender_profile_id: profile.id },
+      order: { created_at: 'DESC' },
+    });
+
+    return Promise.all(
+      requests.map(async (request) => ({
+        id: request.id,
+        status: request.status,
+        created_at: request.created_at,
+        profile: await this.findOne(request.recipient_profile_id),
+      })),
+    );
+  }
+
+  async acceptInterestRequest(
+    requestId: number,
+    user?: {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    },
+  ) {
+    const recipient = await this.getAuthenticatedProfile(user);
+    const request = await this.interestRequestRepository.findOne({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Interest request not found.');
+    }
+
+    if (request.recipient_profile_id !== recipient.id) {
+      throw new ForbiddenException(
+        'You can only accept requests sent to your profile.',
+      );
+    }
+
+    if (request.status === 'Pending') {
+      request.status = 'Accepted';
+      await this.interestRequestRepository.save(request);
+    } else if (request.status !== 'Accepted') {
+      throw new BadRequestException(
+        `This request cannot be accepted because it is ${request.status.toLowerCase()}.`,
+      );
+    }
+
+    return {
+      message: 'Interest request accepted.',
+      request,
+      profile: await this.findOne(request.sender_profile_id),
+    };
+  }
+
+  async getConnections(user?: {
+    account_type?: string;
+    matrimonial_id?: number;
+    member_id?: string;
+  }) {
+    const profile = await this.getAuthenticatedProfile(user);
+    const requests = await this.interestRequestRepository.find({
+      where: [
+        { sender_profile_id: profile.id, status: 'Accepted' },
+        { recipient_profile_id: profile.id, status: 'Accepted' },
+      ],
+      order: { updated_at: 'DESC' },
+    });
+
+    return Promise.all(
+      requests.map(async (request) => {
+        const connectedProfileId =
+          request.sender_profile_id === profile.id
+            ? request.recipient_profile_id
+            : request.sender_profile_id;
+
+        return {
+          request_id: request.id,
+          connected_at: request.updated_at,
+          profile: await this.findOne(connectedProfileId),
+        };
+      }),
+    );
+  }
 
   // =========================================================
   // CHECK MEMBER
@@ -926,11 +1134,19 @@ export class MatrimonialUsersService {
   // FIND ONE
   // =========================================================
 
-  async findOne(id: number | string) {
+  async findOne(
+    id: number | string,
+    user?: {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    },
+  ) {
     const profileId = Number(id);
-    const where = Number.isSafeInteger(profileId) && profileId > 0
-      ? { id: profileId }
-      : { member_id: String(id) };
+    const where =
+      Number.isSafeInteger(profileId) && profileId > 0
+        ? { id: profileId }
+        : { member_id: String(id) };
 
     const matrimonial = await this.userRepository.findOne({
       where,
@@ -951,6 +1167,43 @@ export class MatrimonialUsersService {
       preference_phone: _preferencePhone,
       ...safeMatrimonial
     } = matrimonial;
+
+    const authenticatedProfileId = Number(user?.matrimonial_id);
+    let viewerProfileId =
+      user?.account_type === 'matrimonial' &&
+      Number.isSafeInteger(authenticatedProfileId) &&
+      authenticatedProfileId > 0
+        ? authenticatedProfileId
+        : undefined;
+
+    if (!viewerProfileId && user?.member_id) {
+      const viewerProfile = await this.userRepository.findOne({
+        where: { member_id: user.member_id },
+      });
+      viewerProfileId = viewerProfile?.id;
+    }
+
+    const isProfileOwner =
+      (user?.account_type === 'matrimonial' &&
+        Number(user.matrimonial_id) === matrimonial.id) ||
+      (!!user?.member_id && user.member_id === matrimonial.member_id);
+
+    const hasAcceptedRequest =
+      !!viewerProfileId &&
+      !!(await this.interestRequestRepository.findOne({
+        where: [
+          {
+            sender_profile_id: viewerProfileId,
+            recipient_profile_id: matrimonial.id,
+            status: 'Accepted',
+          },
+          {
+            sender_profile_id: matrimonial.id,
+            recipient_profile_id: viewerProfileId,
+            status: 'Accepted',
+          },
+        ],
+      }));
 
     return {
       ...safeMatrimonial,
@@ -980,6 +1233,13 @@ export class MatrimonialUsersService {
       mandal: member?.mandal || null,
 
       sangham: member?.sangham || null,
+
+      ...(isProfileOwner || hasAcceptedRequest
+        ? {
+            email: member?.email || null,
+            mobile: member?.mobile || null,
+          }
+        : {}),
     };
   }
 

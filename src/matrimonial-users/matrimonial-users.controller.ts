@@ -20,6 +20,7 @@ import { extname } from 'path';
 
 import { MatrimonialUsersService } from './matrimonial-users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { MatrimonialProfileOwnerGuard } from './matrimonial-profile-owner.guard';
 
 @Controller('matrimonial-users')
@@ -106,13 +107,86 @@ export class MatrimonialUsersController {
     return this.matrimonialUsersService.findAll(user);
   }
 
+  @Post(':id/request')
+  @UseGuards(JwtAuthGuard)
+  async sendInterestRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+  ) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    };
+
+    return this.matrimonialUsersService.sendInterestRequest(id, user);
+  }
+
+  @Get('requests/received')
+  @UseGuards(JwtAuthGuard)
+  async getReceivedRequests(@Req() req: Request) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    };
+
+    return this.matrimonialUsersService.getReceivedRequests(user);
+  }
+
+  @Get('requests/sent')
+  @UseGuards(JwtAuthGuard)
+  async getSentRequests(@Req() req: Request) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    };
+
+    return this.matrimonialUsersService.getSentRequests(user);
+  }
+
+  @Put('requests/:requestId/accept')
+  @UseGuards(JwtAuthGuard)
+  async acceptInterestRequest(
+    @Param('requestId', ParseIntPipe) requestId: number,
+    @Req() req: Request,
+  ) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    };
+
+    return this.matrimonialUsersService.acceptInterestRequest(requestId, user);
+  }
+
+  @Get('connections')
+  @UseGuards(JwtAuthGuard)
+  async getConnections(@Req() req: Request) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    };
+
+    return this.matrimonialUsersService.getConnections(user);
+  }
+
   // =========================================================
   // GET SINGLE MATRIMONIAL USER
   // =========================================================
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.matrimonialUsersService.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req: Request) {
+    const user = req.user as {
+      account_type?: string;
+      matrimonial_id?: number;
+      member_id?: string;
+    };
+
+    return this.matrimonialUsersService.findOne(id, user);
   }
 
   // =========================================================

@@ -25,6 +25,18 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Matrimonial interest requests
+
+The authenticated matrimonial search flow supports these endpoints:
+
+- `POST /matrimonial-users/:id/request` sends an interest request to a profile.
+- `GET /matrimonial-users/requests/received` lists incoming requests and their counts (`likes` is the total received; `requests` is the pending count).
+- `GET /matrimonial-users/requests/sent` lists sent requests and their statuses.
+- `PUT /matrimonial-users/requests/:requestId/accept` accepts a pending incoming request and returns the sender's profile.
+- `GET /matrimonial-users/connections` lists accepted profiles.
+
+Apply `database/migrations/20261029_create_matrimonial_interest_requests.sql` before deploying these endpoints. All endpoints above require a bearer token for an account linked to a matrimonial profile.
+
 ## Project setup
 
 ```bash
