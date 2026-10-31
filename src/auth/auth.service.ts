@@ -48,12 +48,19 @@ export class AuthService {
     const member = await this.memberRepository.findOne({
       where: { email: normalizedEmail },
     });
-    if (!member) return genericResponse;
+    if (!member) {
+      throw new NotFoundException('No member account was found for this email.');
+    }
 
     const matrimonialProfile = await this.matrimonialRepository.findOne({
       where: { member_id: member.member_id },
     });
-    const accountType = matrimonialProfile ? 'matrimonial' : 'member';
+    if (!matrimonialProfile) {
+      throw new NotFoundException(
+        'This email is not linked to a Matrimony account.',
+      );
+    }
+    const accountType = 'matrimonial';
     const resetToken = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(resetToken).digest('hex');
     const now = new Date();
