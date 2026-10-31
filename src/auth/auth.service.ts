@@ -7,13 +7,16 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
+import { createHash, randomBytes } from 'crypto';
 
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
 import { MatrimonialUser } from '../matrimonial-users/entities/matrimonial-user.entity';
+import { PasswordResetToken } from './password-reset-token.entity';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -24,8 +27,135 @@ export class AuthService {
     @InjectRepository(MatrimonialUser)
     private readonly matrimonialRepository: Repository<MatrimonialUser>,
 
+    @InjectRepository(PasswordResetToken)
+    private readonly passwordResetTokenRepository: Repository<PasswordResetToken>,
+
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
+
+  async requestPasswordReset(email: string) {
+    const normalizedEmail = email?.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new BadRequestException('Email is required');
+    }
+
+    const genericResponse = {
+      message:
+        'If an account exists for this email, password reset instructions will be sent.',
+    };
+
+    const member = await this.memberRepository.findOne({
+      where: { email: normalizedEmail },
+    });
+    if (!member) return genericResponse;
+
+    const matrimonialProfile = await this.matrimonialRepository.findOne({
+      where: { member_id: member.member_id },
+    });
+    const accountType = matrimonialProfile ? 'matrimonial' : 'member';
+    const resetToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(resetToken).digest('hex');
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
+
+    await this.passwordResetTokenRepository.update(
+      { member_id: member.member_id, used_at: IsNull() },
+      { used_at: now },
+    );
+    await this.passwordResetTokenRepository.save(
+      this.passwordResetTokenRepository.create({
+        token_hash: tokenHash,
+        member_id: member.member_id,
+        account_type: accountType,
+        expires_at: expiresAt,
+        used_at: null,
+      }),
+    );
+
+    const frontendUrl =
+      process.env.FRONTEND_URL || 'https://www.aaryavysyamahasabha.com';
+    const resetUrl = new URL('/reset-password', frontendUrl);
+    resetUrl.searchParams.set('token', resetToken);
+
+    const emailSent = await this.emailService.sendPasswordResetEmail({
+      email: member.email,
+      name: member.full_name || 'Member',
+      resetUrl: resetUrl.toString(),
+    });
+
+    if (!emailSent) {
+      await this.passwordResetTokenRepository.update(
+        { token_hash: tokenHash, used_at: IsNull() },
+        { used_at: new Date() },
+      );
+      return genericResponse;
+    }
+
+    return genericResponse;
+  }
+
+  async resetPassword(token: string, password: string) {
+    if (!token || !password) {
+      throw new BadRequestException('Reset token and new password are required');
+    }
+    if (password.length < 6) {
+      throw new BadRequestException(
+        'Password must contain at least 6 characters',
+      );
+    }
+
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const now = new Date();
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await this.passwordResetTokenRepository.manager.transaction(
+      async (manager) => {
+        const resetTokenRepository = manager.getRepository(PasswordResetToken);
+        const resetRecord = await resetTokenRepository.findOne({
+          where: { token_hash: tokenHash, used_at: IsNull() },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!resetRecord || resetRecord.expires_at.getTime() <= now.getTime()) {
+          throw new BadRequestException(
+            'The password reset link is invalid or expired. Request a new link.',
+          );
+        }
+
+        if (resetRecord.account_type === 'matrimonial') {
+          const profileRepository = manager.getRepository(MatrimonialUser);
+          const profile = await profileRepository.findOne({
+            where: { member_id: resetRecord.member_id },
+          });
+          if (!profile) {
+            throw new BadRequestException(
+              'The account for this reset link could not be found.',
+            );
+          }
+          profile.password = hashedPassword;
+          await profileRepository.save(profile);
+        } else {
+          const memberRepository = manager.getRepository(MembershipRegister);
+          const member = await memberRepository.findOne({
+            where: { member_id: resetRecord.member_id },
+          });
+          if (!member) {
+            throw new BadRequestException(
+              'The account for this reset link could not be found.',
+            );
+          }
+          member.password = hashedPassword;
+          await memberRepository.save(member);
+        }
+
+        resetRecord.used_at = now;
+        await resetTokenRepository.save(resetRecord);
+      },
+    );
+
+    return { message: 'Password updated successfully. You can now log in.' };
+  }
 
   // =========================================================
   // LOGIN

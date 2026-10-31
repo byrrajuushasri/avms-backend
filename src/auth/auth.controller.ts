@@ -41,6 +41,37 @@ export class AuthController {
   }
 
   // =========================================================
+  // REQUEST PASSWORD RESET
+  // POST /auth/forgot-password
+  // =========================================================
+
+  @Post('forgot-password')
+  async forgotPassword(
+    @Body()
+    body: {
+      email: string;
+    },
+  ) {
+    return this.authService.requestPasswordReset(body.email);
+  }
+
+  // =========================================================
+  // RESET PASSWORD USING A ONE-TIME EMAIL TOKEN
+  // POST /auth/reset-password
+  // =========================================================
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body()
+    body: {
+      token: string;
+      password: string;
+    },
+  ) {
+    return this.authService.resetPassword(body.token, body.password);
+  }
+
+  // =========================================================
   // CURRENT USER
   // GET /auth/me
   // =========================================================

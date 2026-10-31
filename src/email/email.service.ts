@@ -7,6 +7,32 @@ export class EmailService {
 
   private readonly resend = new Resend(process.env.RESEND_API_KEY);
 
+  async sendPasswordResetEmail(params: {
+    email: string;
+    name: string;
+    resetUrl: string;
+  }): Promise<boolean> {
+    const { email, name, resetUrl } = params;
+    const safeResetUrl = this.escapeHtml(resetUrl);
+
+    return this.sendEmail(
+      email,
+      'Reset Your Password - Telangana State Arya Vysya Mahasabha',
+      `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;line-height:1.6">
+          <h2 style="color:#800018">Telangana State Arya Vysya Mahasabha</h2>
+          <p>Dear ${this.escapeHtml(name)},</p>
+          <p>We received a request to reset the password for your account.</p>
+          <p><a href="${safeResetUrl}" style="display:inline-block;padding:12px 20px;background:#800018;color:#fff;text-decoration:none;border-radius:8px">Reset Password</a></p>
+          <p>This link expires in 30 minutes and can only be used once. If you did not request a password reset, you can ignore this email.</p>
+          <p>If the button does not work, copy and paste this link into your browser:<br /><a href="${safeResetUrl}">${safeResetUrl}</a></p>
+          <p>Regards,<br /><strong>Telangana State Arya Vysya Mahasabha</strong></p>
+        </div>
+      `,
+      'Password reset',
+    );
+  }
+
   async sendMembershipApprovalEmail(params: {
     email: string;
     name: string;

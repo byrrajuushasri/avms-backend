@@ -11,15 +11,22 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { PasswordResetToken } from './password-reset-token.entity';
 
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
 import { MatrimonialUser } from '../matrimonial-users/entities/matrimonial-user.entity';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
     ConfigModule,
 
-    TypeOrmModule.forFeature([MembershipRegister, MatrimonialUser]),
+    TypeOrmModule.forFeature([
+      MembershipRegister,
+      MatrimonialUser,
+      PasswordResetToken,
+    ]),
+    EmailModule,
 
     PassportModule.register({
       defaultStrategy: 'jwt',
