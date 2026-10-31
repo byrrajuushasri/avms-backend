@@ -23,9 +23,9 @@ export class EmailService {
           <h2 style="color:#800018">Telangana State Arya Vysya Mahasabha</h2>
           <p>Dear ${this.escapeHtml(name)},</p>
           <p>We received a request to reset the password for your account.</p>
-          <p><a href="${safeResetUrl}" style="display:inline-block;padding:12px 20px;background:#800018;color:#fff;text-decoration:none;border-radius:8px">Reset Password</a></p>
+          <p>Reset your password using this link: <a href="${safeResetUrl}">Reset Password</a></p>
           <p>This link expires in 30 minutes and can only be used once. If you did not request a password reset, you can ignore this email.</p>
-          <p>If the button does not work, copy and paste this link into your browser:<br /><a href="${safeResetUrl}">${safeResetUrl}</a></p>
+          
           <p>Regards,<br /><strong>Telangana State Arya Vysya Mahasabha</strong></p>
         </div>
       `,
