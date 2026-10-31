@@ -184,6 +184,7 @@ export class MatrimonialUsersController {
       account_type?: string;
       matrimonial_id?: number;
       member_id?: string;
+      role?: string;
     };
 
     return this.matrimonialUsersService.findOne(id, user);

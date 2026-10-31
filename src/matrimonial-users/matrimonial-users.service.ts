@@ -33,6 +33,25 @@ export class MatrimonialUsersService {
     private readonly emailService: EmailService,
   ) {}
 
+  private async findRequestProfileSummary(profileId: number) {
+    const profile = await this.userRepository.findOne({
+      where: { id: profileId },
+    });
+    if (!profile) return null;
+
+    const member = await this.memberRepository.findOne({
+      where: { member_id: profile.member_id },
+    });
+
+    return {
+      id: profile.id,
+      member_id: profile.member_id,
+      name: member?.full_name || null,
+      full_name: member?.full_name || null,
+      photo: member?.photo || null,
+    };
+  }
+
   private async getAuthenticatedProfile(user?: {
     account_type?: string;
     matrimonial_id?: number;
@@ -67,6 +86,7 @@ export class MatrimonialUsersService {
       account_type?: string;
       matrimonial_id?: number;
       member_id?: string;
+      role?: string;
     },
   ) {
     const sender = await this.getAuthenticatedProfile(user);
@@ -128,7 +148,7 @@ export class MatrimonialUsersService {
         id: request.id,
         status: request.status,
         created_at: request.created_at,
-        profile: await this.findOne(request.sender_profile_id),
+        profile: await this.findRequestProfileSummary(request.sender_profile_id),
       })),
     );
 
@@ -163,7 +183,7 @@ export class MatrimonialUsersService {
         id: request.id,
         status: request.status,
         created_at: request.created_at,
-        profile: await this.findOne(request.recipient_profile_id),
+        profile: await this.findRequestProfileSummary(request.recipient_profile_id),
       })),
     );
   }
@@ -203,7 +223,7 @@ export class MatrimonialUsersService {
     return {
       message: 'Interest request accepted.',
       request,
-      profile: await this.findOne(request.sender_profile_id),
+      profile: await this.findOne(request.sender_profile_id, user),
     };
   }
 
@@ -231,7 +251,7 @@ export class MatrimonialUsersService {
         return {
           request_id: request.id,
           connected_at: request.updated_at,
-          profile: await this.findOne(connectedProfileId),
+          profile: await this.findOne(connectedProfileId, user),
         };
       }),
     );
@@ -1140,6 +1160,7 @@ export class MatrimonialUsersService {
       account_type?: string;
       matrimonial_id?: number;
       member_id?: string;
+      role?: string;
     },
   ) {
     const profileId = Number(id);
@@ -1188,6 +1209,14 @@ export class MatrimonialUsersService {
         Number(user.matrimonial_id) === matrimonial.id) ||
       (!!user?.member_id && user.member_id === matrimonial.member_id);
 
+    const isAdmin = [
+      'super_admin',
+      'state_admin',
+      'district_admin',
+      'mandal_admin',
+      'sangam_admin',
+    ].includes(String(user?.role || '').toLowerCase());
+
     const hasAcceptedRequest =
       !!viewerProfileId &&
       !!(await this.interestRequestRepository.findOne({
@@ -1204,6 +1233,12 @@ export class MatrimonialUsersService {
           },
         ],
       }));
+
+    if (!isProfileOwner && !hasAcceptedRequest && !isAdmin) {
+      throw new ForbiddenException(
+        'This profile is available after the owner accepts your interest request.',
+      );
+    }
 
     return {
       ...safeMatrimonial,
@@ -1234,7 +1269,7 @@ export class MatrimonialUsersService {
 
       sangham: member?.sangham || null,
 
-      ...(isProfileOwner || hasAcceptedRequest
+      ...(isProfileOwner || hasAcceptedRequest || isAdmin
         ? {
             email: member?.email || null,
             mobile: member?.mobile || null,
