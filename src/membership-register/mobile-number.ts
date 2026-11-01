@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 export function normalizeMembershipMobileNumber(value: unknown): string {
   if (typeof value !== 'string' || !value.trim()) {
@@ -7,34 +8,32 @@ export function normalizeMembershipMobileNumber(value: unknown): string {
 
   const mobile = value.trim().replace(/[\s().-]/g, '');
 
-  if (mobile.startsWith('+91')) {
-    const indianMobile = mobile.slice(3);
-    if (/^[6-9]\d{9}$/.test(indianMobile)) {
-      return indianMobile;
-    }
-
-    throw new BadRequestException(
-      'Please enter a valid 10-digit Indian mobile number.',
-    );
-  }
-
-  if (mobile.startsWith('91') && mobile.length === 12) {
-    const indianMobile = mobile.slice(2);
-    if (/^[6-9]\d{9}$/.test(indianMobile)) {
-      return indianMobile;
-    }
-
-    throw new BadRequestException(
-      'Please enter a valid 10-digit Indian mobile number.',
-    );
-  }
-
   if (/^[6-9]\d{9}$/.test(mobile)) {
     return mobile;
   }
 
-  if (/^\+[1-9]\d{6,14}$/.test(mobile)) {
-    return mobile;
+  const internationalNumber =
+    mobile.startsWith('91') && mobile.length === 12
+      ? `+${mobile}`
+      : mobile.startsWith('+')
+        ? mobile
+        : '';
+  const parsedNumber = internationalNumber
+    ? parsePhoneNumberFromString(internationalNumber)
+    : undefined;
+
+  if (parsedNumber?.isValid()) {
+    if (parsedNumber.country === 'IN') {
+      if (/^[6-9]\d{9}$/.test(parsedNumber.nationalNumber)) {
+        return parsedNumber.nationalNumber;
+      }
+
+      throw new BadRequestException(
+        'Please enter a valid 10-digit Indian mobile number.',
+      );
+    }
+
+    return parsedNumber.number;
   }
 
   throw new BadRequestException(

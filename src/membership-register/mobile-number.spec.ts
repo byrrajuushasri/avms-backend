@@ -25,6 +25,9 @@ describe('normalizeMembershipMobileNumber', () => {
     expect(() => normalizeMembershipMobileNumber('+91 12345 67890')).toThrow(
       BadRequestException,
     );
+    expect(() => normalizeMembershipMobileNumber('+121653414')).toThrow(
+      BadRequestException,
+    );
     expect(() => normalizeMembershipMobileNumber('+123')).toThrow(
       BadRequestException,
     );
