@@ -33,7 +33,7 @@ export class Member {
   @Index()
   @Column({
     type: 'varchar',
-    length: 10,
+    length: 20,
   })
   mobile: string;
 

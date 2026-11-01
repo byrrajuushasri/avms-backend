@@ -29,9 +29,8 @@ export class CreateMembershipRegisterDto {
 
   @IsNotEmpty()
   @IsString()
-  @Matches(/^(?:[6-9]\d{9}|\+91[6-9]\d{9})$/, {
-    message:
-      'Enter a valid 10-digit Indian mobile number, with or without +91.',
+  @Matches(/^(?:[6-9]\d{9}|\+[1-9]\d{6,14})$/, {
+    message: 'Enter a valid mobile number with its country calling code.',
   })
   mobile: string;
 

@@ -19,32 +19,7 @@ import { MembershipRegisterService } from './membership-register.service';
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 import { StorageService } from '../storage/storage.service';
-
-// =========================================================
-// MOBILE NUMBER VALIDATION
-// =========================================================
-
-function validateMobileNumber(value: unknown): string {
-  if (typeof value !== 'string' || !value.trim()) {
-    throw new BadRequestException('Mobile number is required.');
-  }
-
-  let mobile = value.trim().replace(/[\s()-]/g, '');
-
-  if (mobile.startsWith('+91')) {
-    mobile = mobile.slice(3);
-  } else if (mobile.startsWith('91') && mobile.length === 12) {
-    mobile = mobile.slice(2);
-  }
-
-  if (!/^[6-9]\d{9}$/.test(mobile)) {
-    throw new BadRequestException(
-      'Please enter a valid 10-digit Indian mobile number.',
-    );
-  }
-
-  return mobile;
-}
+import { normalizeMembershipMobileNumber } from './mobile-number';
 
 // =========================================================
 // IMAGE UPLOAD CONFIGURATION
@@ -92,7 +67,7 @@ export class MembershipRegisterController {
   ) {
     const validatedDto = {
       ...dto,
-      mobile: validateMobileNumber(dto.mobile),
+      mobile: normalizeMembershipMobileNumber(dto.mobile),
     };
 
     const uploaded = file
@@ -155,7 +130,7 @@ export class MembershipRegisterController {
       dto.mobile !== null &&
       String(dto.mobile).trim() !== ''
         ? {
-            mobile: validateMobileNumber(String(dto.mobile)),
+            mobile: normalizeMembershipMobileNumber(String(dto.mobile)),
           }
         : {}),
     };

@@ -14,6 +14,7 @@ import { MembershipRegister } from './entities/membership-register.entity';
 import { CreateMembershipRegisterDto } from './dto/create-membership-register.dto';
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 import { EmailService } from '../email/email.service';
+import { normalizeMembershipMobileNumber } from './mobile-number';
 
 @Injectable()
 export class MembershipRegisterService {
@@ -23,36 +24,6 @@ export class MembershipRegisterService {
     private readonly dataSource: DataSource,
     private readonly emailService: EmailService,
   ) {}
-
-  // =========================================================
-  // VALIDATE AND NORMALIZE MOBILE NUMBER
-  // DATABASE FORMAT: 10 DIGITS ONLY
-  // =========================================================
-
-  private validateMobileNumber(value: unknown): string {
-    if (typeof value !== 'string' || !value.trim()) {
-      throw new BadRequestException('Mobile number is required.');
-    }
-
-    let mobile = value.trim().replace(/[\s()-]/g, '');
-
-    // +919700066123 -> 9700066123
-    if (mobile.startsWith('+91')) {
-      mobile = mobile.slice(3);
-    } else if (mobile.startsWith('91') && mobile.length === 12) {
-      // 919700066123 -> 9700066123
-      mobile = mobile.slice(2);
-    }
-
-    // Validate Indian mobile number
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      throw new BadRequestException(
-        'Please enter a valid 10-digit Indian mobile number.',
-      );
-    }
-
-    return mobile;
-  }
 
   // =========================================================
   // GENERATE AVS ID
@@ -231,7 +202,7 @@ export class MembershipRegisterService {
 
   async create(dto: CreateMembershipRegisterDto, photoPath?: string) {
     // Always normalize mobile before database operations.
-    const mobile = this.validateMobileNumber(dto.mobile);
+    const mobile = normalizeMembershipMobileNumber(dto.mobile);
 
     const executiveBody = dto.executive_body?.trim() || 'State Body';
     const district = dto.district?.trim() || '';
@@ -593,7 +564,7 @@ export class MembershipRegisterService {
 
     // MOBILE VALIDATION AND DUPLICATE CHECK
     if (dto.mobile !== undefined) {
-      const mobile = this.validateMobileNumber(dto.mobile);
+      const mobile = normalizeMembershipMobileNumber(dto.mobile);
 
       const existingMobile = await this.membershipRepository.findOne({
         where: { mobile },
