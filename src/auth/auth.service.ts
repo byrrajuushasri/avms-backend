@@ -17,6 +17,7 @@ import { MembershipRegister } from '../membership-register/entities/membership-r
 import { MatrimonialUser } from '../matrimonial-users/entities/matrimonial-user.entity';
 import { PasswordResetToken } from './password-reset-token.entity';
 import { EmailService } from '../email/email.service';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +33,7 @@ export class AuthService {
 
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly activityLogsService: ActivityLogsService,
   ) {}
 
   async requestPasswordReset(email: string) {
@@ -168,7 +170,7 @@ export class AuthService {
   // LOGIN
   // =========================================================
 
-  async login(login: string, password: string) {
+  async login(login: string, password: string, ipAddress?: string | null) {
     if (!login || !password) {
       throw new BadRequestException('Email/Mobile and password are required');
     }
@@ -221,6 +223,26 @@ export class AuthService {
           mandal: member.mandal,
           sangham: member.sangham,
         });
+
+        if (
+          [
+            'admin',
+            'super_admin',
+            'state_admin',
+            'district_admin',
+            'mandal_admin',
+            'sangam_admin',
+          ].includes(member.role)
+        ) {
+          await this.activityLogsService.record({
+            userId: member.id,
+            userName: member.full_name,
+            action: 'login',
+            module: 'auth',
+            description: 'Admin logged in successfully.',
+            ipAddress,
+          });
+        }
 
         const { password: _password, ...safeProfile } = matrimonialProfile;
 
@@ -289,6 +311,26 @@ export class AuthService {
     };
 
     const access_token = await this.jwtService.signAsync(payload);
+
+    if (
+      [
+        'admin',
+        'super_admin',
+        'state_admin',
+        'district_admin',
+        'mandal_admin',
+        'sangam_admin',
+      ].includes(member.role)
+    ) {
+      await this.activityLogsService.record({
+        userId: member.id,
+        userName: member.full_name,
+        action: 'login',
+        module: 'auth',
+        description: 'Admin logged in successfully.',
+        ipAddress,
+      });
+    }
 
     // Never return password
     return {

@@ -16,6 +16,7 @@ import { PasswordResetToken } from './password-reset-token.entity';
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
 import { MatrimonialUser } from '../matrimonial-users/entities/matrimonial-user.entity';
 import { EmailModule } from '../email/email.module';
+import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EmailModule } from '../email/email.module';
       PasswordResetToken,
     ]),
     EmailModule,
+    ActivityLogsModule,
 
     PassportModule.register({
       defaultStrategy: 'jwt',

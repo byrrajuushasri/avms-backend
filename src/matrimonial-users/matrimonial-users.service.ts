@@ -17,6 +17,8 @@ import { MatrimonialInterestRequest } from './entities/matrimonial-interest-requ
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
 
 import { EmailService } from '../email/email.service';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import type { ActivityLogContext } from '../activity-logs/activity-log.types';
 
 @Injectable()
 export class MatrimonialUsersService {
@@ -31,6 +33,7 @@ export class MatrimonialUsersService {
     private readonly interestRequestRepository: Repository<MatrimonialInterestRequest>,
 
     private readonly emailService: EmailService,
+    private readonly activityLogsService: ActivityLogsService,
   ) {}
 
   private async findRequestProfileSummary(profileId: number) {
@@ -371,7 +374,11 @@ export class MatrimonialUsersService {
   // REGISTER MATRIMONIAL MEMBER
   // =========================================================
 
-  async register(data: any, photo?: Express.Multer.File) {
+  async register(
+    data: any,
+    photo?: Express.Multer.File,
+    activityContext?: ActivityLogContext,
+  ) {
     console.log('========== MATRIMONIAL REGISTER ==========');
 
     console.log('Received photo:', photo?.filename || 'No photo');
@@ -774,6 +781,15 @@ export class MatrimonialUsersService {
         },
       });
 
+      await this.activityLogsService.record({
+        userId: activityContext?.userId ?? member.id,
+        userName: activityContext?.userName ?? savedMember?.full_name ?? null,
+        action: 'registration',
+        module: 'matrimony',
+        description: `Matrimony registration submitted for member ${savedUser.member_id}.`,
+        ipAddress: activityContext?.ipAddress,
+      });
+
       const registrationEmail = savedMember?.email?.trim();
       const emailSent = registrationEmail
         ? await this.emailService.sendMatrimonySubmissionEmail({
@@ -852,7 +868,7 @@ export class MatrimonialUsersService {
   // APPROVE MATRIMONIAL PROFILE
   // =========================================================
 
-  async approve(id: number) {
+  async approve(id: number, activityContext?: ActivityLogContext) {
     console.log('========== APPROVE MATRIMONIAL PROFILE ==========');
 
     console.log('Matrimonial ID:', id);
@@ -940,6 +956,15 @@ export class MatrimonialUsersService {
     // =======================================================
 
     const approvedUser = await this.userRepository.save(matrimonial);
+
+    await this.activityLogsService.record({
+      userId: activityContext?.userId,
+      userName: activityContext?.userName,
+      action: 'approval',
+      module: 'matrimony',
+      description: `Matrimony profile approved for ${member.full_name} (${approvedUser.member_id}).`,
+      ipAddress: activityContext?.ipAddress,
+    });
 
     console.log('Matrimonial profile approved:', approvedUser.id);
 
@@ -1290,6 +1315,7 @@ export class MatrimonialUsersService {
       account_type?: string;
       matrimonial_id?: number;
     },
+    activityContext?: ActivityLogContext,
   ) {
     if (user.account_type !== 'matrimonial' || user.matrimonial_id !== id) {
       throw new ForbiddenException(
@@ -1307,10 +1333,15 @@ export class MatrimonialUsersService {
       );
     }
 
-    return this.update(id, data, photo);
+    return this.update(id, data, photo, activityContext);
   }
 
-  async update(id: number, data: any, photo?: Express.Multer.File) {
+  async update(
+    id: number,
+    data: any,
+    photo?: Express.Multer.File,
+    activityContext?: ActivityLogContext,
+  ) {
     console.log('========== MATRIMONIAL UPDATE ==========');
 
     console.log('Matrimonial ID:', id);
@@ -1704,6 +1735,15 @@ export class MatrimonialUsersService {
         },
       });
 
+      await this.activityLogsService.record({
+        userId: activityContext?.userId,
+        userName: activityContext?.userName,
+        action: 'update',
+        module: 'matrimony',
+        description: `Matrimony profile updated for ${updatedMember?.full_name || updatedUser.member_id}.`,
+        ipAddress: activityContext?.ipAddress,
+      });
+
       // =====================================================
       // RETURN UPDATED DATA
       // =====================================================
@@ -1762,7 +1802,7 @@ export class MatrimonialUsersService {
   // DELETE
   // =========================================================
 
-  async remove(id: number) {
+  async remove(id: number, activityContext?: ActivityLogContext) {
     const member = await this.userRepository.findOne({
       where: {
         id,
@@ -1774,6 +1814,15 @@ export class MatrimonialUsersService {
     }
 
     await this.userRepository.remove(member);
+
+    await this.activityLogsService.record({
+      userId: activityContext?.userId,
+      userName: activityContext?.userName,
+      action: 'delete',
+      module: 'matrimony',
+      description: `Matrimony profile deleted for member ${member.member_id}.`,
+      ipAddress: activityContext?.ipAddress,
+    });
 
     return {
       message: 'Matrimonial profile deleted successfully',

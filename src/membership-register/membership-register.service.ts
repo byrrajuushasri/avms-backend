@@ -15,6 +15,8 @@ import { CreateMembershipRegisterDto } from './dto/create-membership-register.dt
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 import { EmailService } from '../email/email.service';
 import { normalizeMembershipMobileNumber } from './mobile-number';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import type { ActivityLogContext } from '../activity-logs/activity-log.types';
 
 @Injectable()
 export class MembershipRegisterService {
@@ -23,6 +25,7 @@ export class MembershipRegisterService {
     private readonly membershipRepository: Repository<MembershipRegister>,
     private readonly dataSource: DataSource,
     private readonly emailService: EmailService,
+    private readonly activityLogsService: ActivityLogsService,
   ) {}
 
   // =========================================================
@@ -200,7 +203,11 @@ export class MembershipRegisterService {
   // CREATE MEMBERSHIP
   // =========================================================
 
-  async create(dto: CreateMembershipRegisterDto, photoPath?: string) {
+  async create(
+    dto: CreateMembershipRegisterDto,
+    photoPath?: string,
+    activityContext?: ActivityLogContext,
+  ) {
     // Always normalize mobile before database operations.
     const mobile = normalizeMembershipMobileNumber(dto.mobile);
 
@@ -375,6 +382,15 @@ export class MembershipRegisterService {
     // SAVE MEMBER ID
     const updatedMember = await this.membershipRepository.save(savedMember);
 
+    await this.activityLogsService.record({
+      userId: activityContext?.userId ?? updatedMember.id,
+      userName: activityContext?.userName ?? updatedMember.full_name,
+      action: 'registration',
+      module: 'membership',
+      description: `New member registered (${updatedMember.member_id}).`,
+      ipAddress: activityContext?.ipAddress,
+    });
+
     // REMOVE PASSWORD
     const { password, ...safeMember } = updatedMember;
 
@@ -515,6 +531,7 @@ export class MembershipRegisterService {
     id: number,
     dto: UpdateMembershipRegisterDto,
     photoPath?: string,
+    activityContext?: ActivityLogContext,
   ) {
     const member = await this.membershipRepository.findOne({
       where: { id },
@@ -712,6 +729,17 @@ export class MembershipRegisterService {
           : false;
       }
 
+      await this.activityLogsService.record({
+        userId: activityContext?.userId,
+        userName: activityContext?.userName,
+        action: !wasApproved && isApproved ? 'approval' : 'update',
+        module: 'membership',
+        description: !wasApproved && isApproved
+          ? `Membership approved for ${updated.full_name} (${updated.member_id}).`
+          : `Member details updated for ${updated.full_name} (${updated.member_id}).`,
+        ipAddress: activityContext?.ipAddress,
+      });
+
       const { password, ...safeMember } = updated;
 
       return {
@@ -742,7 +770,7 @@ export class MembershipRegisterService {
   // DELETE MEMBERSHIP
   // =========================================================
 
-  async remove(id: number) {
+  async remove(id: number, activityContext?: ActivityLogContext) {
     const member = await this.membershipRepository.findOne({
       where: { id },
     });
@@ -752,6 +780,15 @@ export class MembershipRegisterService {
     }
 
     await this.membershipRepository.remove(member);
+
+    await this.activityLogsService.record({
+      userId: activityContext?.userId,
+      userName: activityContext?.userName,
+      action: 'delete',
+      module: 'membership',
+      description: `Member record deleted (${member.full_name}, ${member.member_id}).`,
+      ipAddress: activityContext?.ipAddress,
+    });
 
     return {
       success: true,

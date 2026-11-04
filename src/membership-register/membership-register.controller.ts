@@ -9,7 +9,9 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 
@@ -20,6 +22,9 @@ import { CreateMembershipRegisterDto } from './dto/create-membership-register.dt
 import { UpdateMembershipRegisterDto } from './dto/update-membership-register.dto';
 import { StorageService } from '../storage/storage.service';
 import { normalizeMembershipMobileNumber } from './mobile-number';
+import type { Request } from 'express';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
+import { getActivityLogContext } from '../activity-logs/activity-log-context';
 
 // =========================================================
 // IMAGE UPLOAD CONFIGURATION
@@ -60,9 +65,11 @@ export class MembershipRegisterController {
   // POST /membership-register
 
   @Post()
+  @UseGuards(OptionalJwtAuthGuard)
   @UseInterceptors(FileInterceptor('photo', photoUploadOptions))
   async create(
     @Body() dto: CreateMembershipRegisterDto,
+    @Req() req: Request,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     const validatedDto = {
@@ -76,7 +83,11 @@ export class MembershipRegisterController {
 
     const photoPath = uploaded?.key;
 
-    return this.membershipService.create(validatedDto, photoPath);
+    return this.membershipService.create(
+      validatedDto,
+      photoPath,
+      getActivityLogContext(req),
+    );
   }
 
   // GET ALL MEMBERS
@@ -110,18 +121,21 @@ export class MembershipRegisterController {
   // DELETE /membership-register/:id
 
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.membershipService.remove(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  async remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.membershipService.remove(id, getActivityLogContext(req));
   }
 
   // UPDATE MEMBER
   // PUT /membership-register/:id
 
   @Put(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @UseInterceptors(FileInterceptor('photo', photoUploadOptions))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMembershipRegisterDto,
+    @Req() req: Request,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     const validatedDto = {
@@ -141,6 +155,11 @@ export class MembershipRegisterController {
 
     const photoPath = uploaded?.key;
 
-    return this.membershipService.update(id, validatedDto, photoPath);
+    return this.membershipService.update(
+      id,
+      validatedDto,
+      photoPath,
+      getActivityLogContext(req),
+    );
   }
 }

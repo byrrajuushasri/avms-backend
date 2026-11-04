@@ -31,13 +31,18 @@ export class AuthController {
 
   @Post('login')
   async login(
+    @Req() req: Request,
     @Body()
     body: {
       login: string;
       password: string;
     },
   ) {
-    return this.authService.login(body.login, body.password);
+    return this.authService.login(
+      body.login,
+      body.password,
+      req.ip || req.socket.remoteAddress || null,
+    );
   }
 
   // =========================================================

@@ -17,6 +17,7 @@ import { MailModule } from './mail/mail.module';
 import { EmailModule } from './email/email.module';
 import { ContactMessagesModule } from './contact-messages/contact-messages.module';
 import { StorageModule } from './storage/storage.module';
+import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { StorageModule } from './storage/storage.module';
     EmailModule,
     ContactMessagesModule,
     StorageModule,
+    ActivityLogsModule,
   ],
 })
 export class AppModule {}

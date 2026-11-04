@@ -37,6 +37,13 @@ The authenticated matrimonial search flow supports these endpoints:
 
 Apply `database/migrations/20261029_create_matrimonial_interest_requests.sql` before deploying these endpoints. All endpoints above require a bearer token for an account linked to a matrimonial profile.
 
+## Admin activity logs
+
+Apply `database/migrations/20261104_create_activity_logs.sql` before deploying the activity logging changes. Successful administrator logins, membership and matrimony registrations, approvals, updates, deletions, and logouts are stored in the `activity_logs` table.
+
+- `GET /activity-logs?page=1&limit=10` returns a page of activity entries (maximum page size 200) with total count and page metadata. It requires a bearer token for an administrator role.
+- `POST /activity-logs/logout` records an administrator logout and requires the same bearer token.
+
 ## Project setup
 
 ```bash

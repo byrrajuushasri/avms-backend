@@ -10,6 +10,7 @@ import { MatrimonialInterestRequest } from './entities/matrimonial-interest-requ
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
 
 import { EmailModule } from '../email/email.module';
+import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EmailModule } from '../email/email.module';
     ]),
 
     EmailModule,
+    ActivityLogsModule,
   ],
 
   controllers: [MatrimonialUsersController],

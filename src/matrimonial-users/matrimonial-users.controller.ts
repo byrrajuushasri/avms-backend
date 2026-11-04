@@ -22,6 +22,7 @@ import { MatrimonialUsersService } from './matrimonial-users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { MatrimonialProfileOwnerGuard } from './matrimonial-profile-owner.guard';
+import { getActivityLogContext } from '../activity-logs/activity-log-context';
 
 @Controller('matrimonial-users')
 export class MatrimonialUsersController {
@@ -34,6 +35,7 @@ export class MatrimonialUsersController {
   // =========================================================
 
   @Post('register')
+  @UseGuards(OptionalJwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('photo', {
       storage: diskStorage({
@@ -62,6 +64,7 @@ export class MatrimonialUsersController {
     }),
   )
   async register(
+    @Req() req: Request,
     @Body()
     data: any,
 
@@ -72,7 +75,11 @@ export class MatrimonialUsersController {
 
     console.log('Photo:', photo?.filename || 'No photo');
 
-    return this.matrimonialUsersService.register(data, photo);
+    return this.matrimonialUsersService.register(
+      data,
+      photo,
+      getActivityLogContext(req),
+    );
   }
 
   // =========================================================
@@ -211,15 +218,20 @@ export class MatrimonialUsersController {
   // =========================================================
 
   @Put(':id/approve')
+  @UseGuards(OptionalJwtAuthGuard)
   async approve(
     @Param('id', ParseIntPipe)
     id: number,
+    @Req() req: Request,
   ) {
     console.log('========== APPROVE MATRIMONIAL ==========');
 
     console.log('Matrimonial ID:', id);
 
-    return this.matrimonialUsersService.approve(id);
+    return this.matrimonialUsersService.approve(
+      id,
+      getActivityLogContext(req),
+    );
   }
 
   // =========================================================
@@ -263,10 +275,17 @@ export class MatrimonialUsersController {
       matrimonial_id?: number;
     };
 
-    return this.matrimonialUsersService.updateOwnProfile(id, data, photo, user);
+    return this.matrimonialUsersService.updateOwnProfile(
+      id,
+      data,
+      photo,
+      user,
+      getActivityLogContext(req),
+    );
   }
 
   @Put(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('photo', {
       storage: diskStorage({
@@ -301,6 +320,7 @@ export class MatrimonialUsersController {
     @Body()
     data: any,
 
+    @Req() req: Request,
     @UploadedFile()
     photo?: Express.Multer.File,
   ) {
@@ -310,7 +330,12 @@ export class MatrimonialUsersController {
 
     console.log('Uploaded Photo:', photo?.filename || 'NO PHOTO');
 
-    return this.matrimonialUsersService.update(id, data, photo);
+    return this.matrimonialUsersService.update(
+      id,
+      data,
+      photo,
+      getActivityLogContext(req),
+    );
   }
 
   // =========================================================
@@ -318,10 +343,15 @@ export class MatrimonialUsersController {
   // =========================================================
 
   @Delete(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   async remove(
     @Param('id', ParseIntPipe)
     id: number,
+    @Req() req: Request,
   ) {
-    return this.matrimonialUsersService.remove(id);
+    return this.matrimonialUsersService.remove(
+      id,
+      getActivityLogContext(req),
+    );
   }
 }
