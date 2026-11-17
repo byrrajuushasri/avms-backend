@@ -11,6 +11,9 @@ import { MembershipRegister } from '../membership-register/entities/membership-r
 
 import { EmailModule } from '../email/email.module';
 import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
+import { AuthModule } from '../auth/auth.module';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
 
 @Module({
   imports: [
@@ -22,11 +25,17 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 
     EmailModule,
     ActivityLogsModule,
+    AuthModule,
   ],
 
   controllers: [MatrimonialUsersController],
 
-  providers: [MatrimonialUsersService, MatrimonialProfileOwnerGuard],
+  providers: [
+    MatrimonialUsersService,
+    MatrimonialProfileOwnerGuard,
+    JwtAuthGuard,
+    RolesGuard,
+  ],
 
   exports: [MatrimonialUsersService],
 })

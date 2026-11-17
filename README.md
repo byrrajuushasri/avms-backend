@@ -32,6 +32,7 @@ The authenticated matrimonial search flow supports these endpoints:
 - `POST /matrimonial-users/:id/request` sends an interest request to a profile.
 - `GET /matrimonial-users/requests/received` lists incoming requests and their counts (`likes` is the total received; `requests` is the pending count).
 - `GET /matrimonial-users/requests/sent` lists sent requests and their statuses.
+- `GET /matrimonial-users/admin/request-counts` returns sent and received totals and accepted counts by matrimonial profile ID for `super_admin` and `sangam_admin` roles.
 - `PUT /matrimonial-users/requests/:requestId/accept` accepts a pending incoming request and returns the sender's profile.
 - `GET /matrimonial-users/connections` lists accepted profiles.
 

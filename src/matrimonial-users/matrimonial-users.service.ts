@@ -191,6 +191,93 @@ export class MatrimonialUsersService {
     );
   }
 
+  async getAdminRequestCounts() {
+    const [sentRows, receivedRows] = await Promise.all([
+      this.interestRequestRepository
+        .createQueryBuilder('request')
+        .select(
+          'request.sender_profile_id',
+          'profile_id',
+        )
+        .addSelect('COUNT(request.id)', 'request_count')
+        .addSelect(
+          'SUM(CASE WHEN request.status = :acceptedStatus THEN 1 ELSE 0 END)',
+          'accepted_count',
+        )
+        .setParameter('acceptedStatus', 'Accepted')
+        .groupBy('request.sender_profile_id')
+        .getRawMany<{
+          profile_id: number | string;
+          request_count: number | string;
+          accepted_count: number | string;
+        }>(),
+      this.interestRequestRepository
+        .createQueryBuilder('request')
+        .select(
+          'request.recipient_profile_id',
+          'profile_id',
+        )
+        .addSelect('COUNT(request.id)', 'request_count')
+        .addSelect(
+          'SUM(CASE WHEN request.status = :acceptedStatus THEN 1 ELSE 0 END)',
+          'accepted_count',
+        )
+        .setParameter('acceptedStatus', 'Accepted')
+        .groupBy('request.recipient_profile_id')
+        .getRawMany<{
+          profile_id: number | string;
+          request_count: number | string;
+          accepted_count: number | string;
+        }>(),
+    ]);
+
+    const countsByProfileId = new Map<
+      number,
+      {
+        requests_sent: number;
+        requests_sent_accepted: number;
+        requests_received: number;
+        requests_received_accepted: number;
+      }
+    >();
+    const getCounts = (profileId: number) => {
+      let counts = countsByProfileId.get(profileId);
+      if (!counts) {
+        counts = {
+          requests_sent: 0,
+          requests_sent_accepted: 0,
+          requests_received: 0,
+          requests_received_accepted: 0,
+        };
+        countsByProfileId.set(profileId, counts);
+      }
+      return counts;
+    };
+
+    for (const row of sentRows) {
+      getCounts(Number(row.profile_id)).requests_sent = Number(
+        row.request_count,
+      );
+      getCounts(Number(row.profile_id)).requests_sent_accepted = Number(
+        row.accepted_count,
+      );
+    }
+
+    for (const row of receivedRows) {
+      getCounts(Number(row.profile_id)).requests_received = Number(
+        row.request_count,
+      );
+      getCounts(Number(row.profile_id)).requests_received_accepted = Number(
+        row.accepted_count,
+      );
+    }
+
+    return Array.from(countsByProfileId, ([profile_id, counts]) => ({
+      profile_id,
+      ...counts,
+    })).sort((first, second) => first.profile_id - second.profile_id);
+  }
+
   async acceptInterestRequest(
     requestId: number,
     user?: {

@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { EmailService } from '../email/email.service';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 import { MembershipRegister } from '../membership-register/entities/membership-register.entity';
 import { MatrimonialInterestRequest } from './entities/matrimonial-interest-request.entity';
 import { MatrimonialUser } from './entities/matrimonial-user.entity';
@@ -48,12 +49,14 @@ describe('MatrimonialUsersService.findAll', () => {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
       save: jest.fn(),
+      createQueryBuilder: jest.fn(),
     };
     const service = new MatrimonialUsersService(
       userRepository as unknown as Repository<MatrimonialUser>,
       memberRepository as unknown as Repository<MembershipRegister>,
       interestRequestRepository as unknown as Repository<MatrimonialInterestRequest>,
       {} as EmailService,
+      {} as ActivityLogsService,
     );
 
     return {
@@ -336,6 +339,63 @@ describe('MatrimonialUsersService.findAll', () => {
     });
     expect(result.requests).toHaveLength(2);
     expect(result.requests[0].profile).toMatchObject({ id: 1 });
+  });
+
+  it('returns sent and received request totals for each profile', async () => {
+    const { service, interestRequestRepository } = createService();
+    const createCountQuery = (
+      rows: Array<{
+        profile_id: number;
+        request_count: string;
+        accepted_count: string;
+      }>,
+    ) => ({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      setParameter: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(rows),
+    });
+
+    interestRequestRepository.createQueryBuilder
+      .mockReturnValueOnce(
+        createCountQuery([
+          { profile_id: 1, request_count: '3', accepted_count: '1' },
+          { profile_id: 2, request_count: '1', accepted_count: '0' },
+        ]),
+      )
+      .mockReturnValueOnce(
+        createCountQuery([
+          { profile_id: 1, request_count: '2', accepted_count: '1' },
+          { profile_id: 3, request_count: '4', accepted_count: '3' },
+        ]),
+      );
+
+    const result = await service.getAdminRequestCounts();
+
+    expect(result).toEqual([
+      {
+        profile_id: 1,
+        requests_sent: 3,
+        requests_sent_accepted: 1,
+        requests_received: 2,
+        requests_received_accepted: 1,
+      },
+      {
+        profile_id: 2,
+        requests_sent: 1,
+        requests_sent_accepted: 0,
+        requests_received: 0,
+        requests_received_accepted: 0,
+      },
+      {
+        profile_id: 3,
+        requests_sent: 0,
+        requests_sent_accepted: 0,
+        requests_received: 4,
+        requests_received_accepted: 3,
+      },
+    ]);
   });
 
   it('prevents a non-recipient from accepting an interest request', async () => {

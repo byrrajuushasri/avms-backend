@@ -23,6 +23,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { MatrimonialProfileOwnerGuard } from './matrimonial-profile-owner.guard';
 import { getActivityLogContext } from '../activity-logs/activity-log-context';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('matrimonial-users')
 export class MatrimonialUsersController {
@@ -151,6 +153,13 @@ export class MatrimonialUsersController {
     };
 
     return this.matrimonialUsersService.getSentRequests(user);
+  }
+
+  @Get('admin/request-counts')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'sangam_admin')
+  getAdminRequestCounts() {
+    return this.matrimonialUsersService.getAdminRequestCounts();
   }
 
   @Put('requests/:requestId/accept')
