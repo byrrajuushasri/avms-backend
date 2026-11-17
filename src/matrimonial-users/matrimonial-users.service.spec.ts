@@ -14,6 +14,7 @@ describe('MatrimonialUsersService.findAll', () => {
       gender: string;
       mobile?: string;
       email?: string;
+      full_name?: string;
     }> = [],
   ) => {
     const profiles = [
@@ -51,11 +52,14 @@ describe('MatrimonialUsersService.findAll', () => {
       save: jest.fn(),
       createQueryBuilder: jest.fn(),
     };
+    const emailService = {
+      sendInterestRequestAcceptedEmail: jest.fn().mockResolvedValue(true),
+    };
     const service = new MatrimonialUsersService(
       userRepository as unknown as Repository<MatrimonialUser>,
       memberRepository as unknown as Repository<MembershipRegister>,
       interestRequestRepository as unknown as Repository<MatrimonialInterestRequest>,
-      {} as EmailService,
+      emailService as unknown as EmailService,
       {} as ActivityLogsService,
     );
 
@@ -64,6 +68,7 @@ describe('MatrimonialUsersService.findAll', () => {
       userRepository,
       memberRepository,
       interestRequestRepository,
+      emailService,
     };
   };
 
@@ -274,8 +279,24 @@ describe('MatrimonialUsersService.findAll', () => {
   });
 
   it('allows only the recipient to accept a request and returns the sender profile', async () => {
-    const { service, userRepository, interestRequestRepository } =
-      createService([{ member_id: 'male-member', gender: 'Male' }]);
+    const {
+      service,
+      userRepository,
+      interestRequestRepository,
+      emailService,
+    } = createService([
+      {
+        member_id: 'male-member',
+        gender: 'Male',
+        email: 'requester@example.com',
+        full_name: 'Requester',
+      },
+      {
+        member_id: 'female-member',
+        gender: 'Female',
+        full_name: 'Recipient',
+      },
+    ]);
     const request = {
       id: 25,
       sender_profile_id: 1,
@@ -301,6 +322,83 @@ describe('MatrimonialUsersService.findAll', () => {
     expect(interestRequestRepository.save).toHaveBeenCalledWith(request);
     expect(result.profile).toMatchObject({ id: 1 });
     expect(result.profile).not.toHaveProperty('password');
+    expect(result).toMatchObject({
+      email_sent: true,
+      message:
+        'Interest request accepted. The requester has been notified by email.',
+    });
+    expect(emailService.sendInterestRequestAcceptedEmail).toHaveBeenCalledWith({
+      email: 'requester@example.com',
+      name: 'Requester',
+      acceptedByName: 'Recipient',
+    });
+  });
+
+  it('keeps acceptance successful when the notification email fails', async () => {
+    const { service, userRepository, interestRequestRepository, emailService } =
+      createService([
+        {
+          member_id: 'male-member',
+          gender: 'Male',
+          email: 'requester@example.com',
+          full_name: 'Requester',
+        },
+        { member_id: 'female-member', gender: 'Female', full_name: 'Recipient' },
+      ]);
+    emailService.sendInterestRequestAcceptedEmail.mockResolvedValue(false);
+    const request = {
+      id: 25,
+      sender_profile_id: 1,
+      recipient_profile_id: 2,
+      status: 'Pending',
+      created_at: new Date(),
+    };
+    userRepository.findOne.mockImplementation(
+      async ({ where }: { where: { id?: number } }) =>
+        where.id === 2
+          ? { id: 2, member_id: 'female-member' }
+          : { id: 1, member_id: 'male-member', password: 'secret' },
+    );
+    interestRequestRepository.findOne.mockResolvedValue(request);
+    interestRequestRepository.save.mockImplementation(async (saved) => saved);
+
+    const result = await service.acceptInterestRequest(25, {
+      account_type: 'matrimonial',
+      matrimonial_id: 2,
+    });
+
+    expect(request.status).toBe('Accepted');
+    expect(result).toMatchObject({
+      email_sent: false,
+      message:
+        'Interest request accepted, but the requester could not be notified by email.',
+    });
+  });
+
+  it('does not resend an email when an already accepted request is retried', async () => {
+    const { service, userRepository, interestRequestRepository, emailService } =
+      createService();
+    const request = {
+      id: 25,
+      sender_profile_id: 1,
+      recipient_profile_id: 2,
+      status: 'Accepted',
+      created_at: new Date(),
+    };
+    userRepository.findOne.mockImplementation(
+      async ({ where }: { where: { id?: number } }) =>
+        where.id === 2 ? { id: 2, member_id: 'female-member' } : { id: 1 },
+    );
+    interestRequestRepository.findOne.mockResolvedValue(request);
+    interestRequestRepository.save.mockImplementation(async (saved) => saved);
+
+    const result = await service.acceptInterestRequest(25, {
+      account_type: 'matrimonial',
+      matrimonial_id: 2,
+    });
+
+    expect(result.email_sent).toBeNull();
+    expect(emailService.sendInterestRequestAcceptedEmail).not.toHaveBeenCalled();
   });
 
   it('returns incoming request totals and the pending count', async () => {

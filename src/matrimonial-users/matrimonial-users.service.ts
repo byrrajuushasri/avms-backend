@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
@@ -22,6 +23,8 @@ import type { ActivityLogContext } from '../activity-logs/activity-log.types';
 
 @Injectable()
 export class MatrimonialUsersService {
+  private readonly logger = new Logger(MatrimonialUsersService.name);
+
   constructor(
     @InjectRepository(MatrimonialUser)
     private readonly userRepository: Repository<MatrimonialUser>,
@@ -301,9 +304,48 @@ export class MatrimonialUsersService {
       );
     }
 
+    let emailSent: boolean | null = null;
     if (request.status === 'Pending') {
       request.status = 'Accepted';
       await this.interestRequestRepository.save(request);
+
+      try {
+        const [requester, acceptedBy] = await Promise.all([
+          this.userRepository.findOne({
+            where: { id: request.sender_profile_id },
+          }),
+          this.memberRepository.findOne({
+            where: { member_id: recipient.member_id },
+          }),
+        ]);
+        const requesterMember = requester
+          ? await this.memberRepository.findOne({
+              where: { member_id: requester.member_id },
+            })
+          : null;
+        const requesterEmail = requesterMember?.email?.trim();
+
+        if (requesterEmail && requesterMember) {
+          emailSent =
+            await this.emailService.sendInterestRequestAcceptedEmail({
+              email: requesterEmail,
+              name: requesterMember.full_name || 'Member',
+              acceptedByName: acceptedBy?.full_name || 'Another member',
+            });
+        } else {
+          this.logger.warn(
+            `Could not notify requester for accepted interest request ${request.id}: requester email is missing.`,
+          );
+          emailSent = false;
+        }
+      } catch (emailError: unknown) {
+        const message =
+          emailError instanceof Error ? emailError.message : String(emailError);
+        this.logger.error(
+          `Could not send acceptance email for interest request ${request.id}: ${message}`,
+        );
+        emailSent = false;
+      }
     } else if (request.status !== 'Accepted') {
       throw new BadRequestException(
         `This request cannot be accepted because it is ${request.status.toLowerCase()}.`,
@@ -311,7 +353,13 @@ export class MatrimonialUsersService {
     }
 
     return {
-      message: 'Interest request accepted.',
+      message:
+        emailSent === null
+          ? 'Interest request accepted.'
+          : emailSent
+            ? 'Interest request accepted. The requester has been notified by email.'
+            : 'Interest request accepted, but the requester could not be notified by email.',
+      email_sent: emailSent,
       request,
       profile: await this.findOne(request.sender_profile_id, user),
     };

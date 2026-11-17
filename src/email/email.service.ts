@@ -83,6 +83,29 @@ export class EmailService {
     );
   }
 
+  async sendInterestRequestAcceptedEmail(params: {
+    email: string;
+    name: string;
+    acceptedByName: string;
+  }): Promise<boolean> {
+    const { email, name, acceptedByName } = params;
+
+    return this.sendEmail(
+      email,
+      'Your Matrimony Interest Request Was Accepted - Telangana State Arya Vysya Mahasabha',
+      `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;line-height:1.6">
+          <h2 style="color:#800018">Telangana State Arya Vysya Mahasabha</h2>
+          <p>Dear ${this.escapeHtml(name)},</p>
+          <p>${this.escapeHtml(acceptedByName)} has accepted your matrimonial interest request.</p>
+          <p>Sign in to your account to view the accepted profile and contact details.</p>
+          <p>Regards,<br /><strong>Telangana State Arya Vysya Mahasabha</strong></p>
+        </div>
+      `,
+      'Matrimony interest acceptance',
+    );
+  }
+
   async sendContactReplyEmail(params: {
     email: string;
     name: string;
