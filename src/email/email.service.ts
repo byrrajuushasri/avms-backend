@@ -106,6 +106,74 @@ export class EmailService {
     );
   }
 
+  async sendMatrimonyRequestReminderEmail(params: {
+    email: string;
+    name: string;
+    requestsSent: number;
+    requestsSentAccepted: number;
+    requestsReceived: number;
+    requestsReceivedAccepted: number;
+  }): Promise<boolean> {
+    const {
+      email,
+      name,
+      requestsSent,
+      requestsSentAccepted,
+      requestsReceived,
+      requestsReceivedAccepted,
+    } = params;
+    const frontendUrl = (
+      process.env.FRONTEND_URL || 'https://www.aaryavysyamahasabha.com'
+    ).replace(/\/+$/, '');
+    const matrimonyUrl = `${frontendUrl}/matrimony`;
+    const text = [
+      'Telangana State Arya Vysya Mahasabha',
+      '',
+      `Dear ${name},`,
+      '',
+      'You have new activity on your Matrimony profile!',
+      '',
+      'Please visit the Matrimony section of our website to review your profile and check your interest requests. Sign in to view the requests you have sent and received, and respond to requests that require your attention.',
+      '',
+      'Your Matrimony Request Activity',
+      '',
+      `- Sent Requests / Accepted: ${requestsSent} / ${requestsSentAccepted}`,
+      `- Received Requests / Accepted: ${requestsReceived} / ${requestsReceivedAccepted}`,
+      '',
+      'Click below to visit the Matrimony section and review your requests.',
+      matrimonyUrl,
+      '',
+      'We wish you the best in finding your life partner.',
+      '',
+      'Regards,',
+      'Telangana State Arya Vysya Mahasabha',
+    ].join('\n');
+
+    return this.sendEmail(
+      email,
+      'New Activity on Your Matrimony Profile - Telangana State Arya Vysya Mahasabha',
+      `
+        <div style="font-family:Arial,sans-serif;color:#333;line-height:1.6">
+          <p><strong>Telangana State Arya Vysya Mahasabha</strong></p>
+          <p>Dear ${this.escapeHtml(name)},</p>
+          <p>You have new activity on your Matrimony profile!</p>
+          <p>Please visit the Matrimony section of our website to review your profile and check your interest requests. Sign in to view the requests you have sent and received, and respond to requests that require your attention.</p>
+          <p><strong>Your Matrimony Request Activity</strong></p>
+          <ul>
+            <li><strong>Sent Requests / Accepted:</strong> ${requestsSent} / ${requestsSentAccepted}</li>
+            <li><strong>Received Requests / Accepted:</strong> ${requestsReceived} / ${requestsReceivedAccepted}</li>
+          </ul>
+          <p>Click below to visit the Matrimony section and review your requests.</p>
+          <p><a href="${this.escapeHtml(matrimonyUrl)}"><strong>Visit Matrimony</strong></a></p>
+          <p>We wish you the best in finding your life partner.</p>
+          <p>Regards,<br /><strong>Telangana State Arya Vysya Mahasabha</strong></p>
+        </div>
+      `,
+      'Matrimony profile reminder',
+      text,
+    );
+  }
+
   async sendContactReplyEmail(params: {
     email: string;
     name: string;
@@ -229,6 +297,7 @@ export class EmailService {
     subject: string,
     html: string,
     context: string,
+    text?: string,
   ): Promise<boolean> {
     try {
       const { data, error } = await this.resend.emails.send({
@@ -237,6 +306,7 @@ export class EmailService {
         to: [email],
         subject,
         html,
+        ...(text ? { text } : {}),
       });
 
       if (error) {

@@ -281,6 +281,46 @@ export class MatrimonialUsersService {
     })).sort((first, second) => first.profile_id - second.profile_id);
   }
 
+  async sendRequestReminder(profileId: number) {
+    const profile = await this.userRepository.findOne({
+      where: { id: profileId },
+    });
+    if (!profile) {
+      throw new NotFoundException('Matrimonial profile not found.');
+    }
+
+    const member = await this.memberRepository.findOne({
+      where: { member_id: profile.member_id },
+    });
+    const email = member?.email?.trim();
+    if (!email) {
+      throw new BadRequestException(
+        'This member does not have an email address.',
+      );
+    }
+
+    const counts = (await this.getAdminRequestCounts()).find(
+      (item) => item.profile_id === profile.id,
+    );
+    const emailSent = await this.emailService.sendMatrimonyRequestReminderEmail(
+      {
+        email,
+        name: member?.full_name || profile.member_id,
+        requestsSent: counts?.requests_sent ?? 0,
+        requestsSentAccepted: counts?.requests_sent_accepted ?? 0,
+        requestsReceived: counts?.requests_received ?? 0,
+        requestsReceivedAccepted: counts?.requests_received_accepted ?? 0,
+      },
+    );
+
+    return {
+      email_sent: emailSent,
+      message: emailSent
+        ? 'Matrimony profile reminder email sent successfully.'
+        : 'The reminder email could not be sent. Please check the email service configuration.',
+    };
+  }
+
   async acceptInterestRequest(
     requestId: number,
     user?: {

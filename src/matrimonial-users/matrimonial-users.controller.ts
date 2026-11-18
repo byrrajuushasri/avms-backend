@@ -162,6 +162,13 @@ export class MatrimonialUsersController {
     return this.matrimonialUsersService.getAdminRequestCounts();
   }
 
+  @Post(':id/send-reminder')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'sangam_admin')
+  sendRequestReminder(@Param('id', ParseIntPipe) id: number) {
+    return this.matrimonialUsersService.sendRequestReminder(id);
+  }
+
   @Put('requests/:requestId/accept')
   @UseGuards(JwtAuthGuard)
   async acceptInterestRequest(

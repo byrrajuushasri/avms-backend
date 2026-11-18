@@ -1,4 +1,8 @@
-import { ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { EmailService } from '../email/email.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
@@ -54,6 +58,7 @@ describe('MatrimonialUsersService.findAll', () => {
     };
     const emailService = {
       sendInterestRequestAcceptedEmail: jest.fn().mockResolvedValue(true),
+      sendMatrimonyRequestReminderEmail: jest.fn().mockResolvedValue(true),
     };
     const service = new MatrimonialUsersService(
       userRepository as unknown as Repository<MatrimonialUser>,
@@ -494,6 +499,86 @@ describe('MatrimonialUsersService.findAll', () => {
         requests_received_accepted: 3,
       },
     ]);
+  });
+
+  it('emails the profile owner using current sent and received request totals', async () => {
+    const { service, userRepository, interestRequestRepository, emailService } =
+      createService([
+        {
+          member_id: 'male-member',
+          gender: 'Male',
+          email: 'member@example.com',
+          full_name: 'Member Name',
+        },
+      ]);
+    userRepository.findOne.mockResolvedValue({
+      id: 1,
+      member_id: 'male-member',
+    });
+    const createCountQuery = (
+      rows: Array<{
+        profile_id: number;
+        request_count: string;
+        accepted_count: string;
+      }>,
+    ) => ({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      setParameter: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(rows),
+    });
+    interestRequestRepository.createQueryBuilder
+      .mockReturnValueOnce(
+        createCountQuery([
+          { profile_id: 1, request_count: '4', accepted_count: '2' },
+        ]),
+      )
+      .mockReturnValueOnce(
+        createCountQuery([
+          { profile_id: 1, request_count: '3', accepted_count: '1' },
+        ]),
+      );
+
+    await expect(service.sendRequestReminder(1)).resolves.toEqual({
+      email_sent: true,
+      message: 'Matrimony profile reminder email sent successfully.',
+    });
+    expect(emailService.sendMatrimonyRequestReminderEmail).toHaveBeenCalledWith(
+      {
+        email: 'member@example.com',
+        name: 'Member Name',
+        requestsSent: 4,
+        requestsSentAccepted: 2,
+        requestsReceived: 3,
+        requestsReceivedAccepted: 1,
+      },
+    );
+  });
+
+  it('does not send a reminder when the profile has no member email', async () => {
+    const { service, userRepository, interestRequestRepository, emailService } =
+      createService();
+    userRepository.findOne.mockResolvedValue({
+      id: 1,
+      member_id: 'male-member',
+    });
+
+    await expect(service.sendRequestReminder(1)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(interestRequestRepository.createQueryBuilder).not.toHaveBeenCalled();
+    expect(emailService.sendMatrimonyRequestReminderEmail).not.toHaveBeenCalled();
+  });
+
+  it('returns not found when a reminder targets an unknown profile', async () => {
+    const { service, userRepository, emailService } = createService();
+    userRepository.findOne.mockResolvedValue(null);
+
+    await expect(service.sendRequestReminder(999)).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(emailService.sendMatrimonyRequestReminderEmail).not.toHaveBeenCalled();
   });
 
   it('prevents a non-recipient from accepting an interest request', async () => {
